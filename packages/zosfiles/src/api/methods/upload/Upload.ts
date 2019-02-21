@@ -24,6 +24,7 @@ import { IUploadOptions } from "./doc/IUploadOptions";
 import { IUploadResult } from "./doc/IUploadResult";
 import { Create } from "../create";
 import { IUploadMap } from "./doc/IUploadMap";
+import { ZosFilesAttributes } from "../../utils/ZosFilesAttributes";
 
 export class Upload {
 
@@ -465,7 +466,8 @@ export class Upload {
                                     ussname: string,
                                     binary: boolean = false,
                                     recursive: boolean = false,
-                                    filesMap?: IUploadMap): Promise<IZosFilesResponse> {
+                                    filesMap?: IUploadMap,
+                                    attributes?: ZosFilesAttributes): Promise<IZosFilesResponse> {
         ImperativeExpect.toNotBeNullOrUndefined(inputDirectory, ZosFilesMessages.missingInputDirectory.message);
         ImperativeExpect.toNotBeEqual(inputDirectory,"", ZosFilesMessages.missingInputDirectory.message);
         ImperativeExpect.toNotBeNullOrUndefined(ussname, ZosFilesMessages.missingUSSDirectoryName.message);
@@ -485,7 +487,14 @@ export class Upload {
         }
 
         if(recursive === false) {
-            const files = ZosFilesUtils.getFileListFromPath(inputDirectory, false);
+            let files = ZosFilesUtils.getFileListFromPath(inputDirectory, false);
+            if (attributes) {
+                files = files.filter((fileName) =>  {
+                    const filePath = path.normalize(path.join(inputDirectory, fileName));
+                    return attributes.fileShouldBeUploaded(filePath);
+                });
+            }
+
             await Promise.all(files.map(async (fileName) => {
                 const filePath = path.normalize(path.join(inputDirectory, fileName));
                 if(!IO.isDir(filePath)) {

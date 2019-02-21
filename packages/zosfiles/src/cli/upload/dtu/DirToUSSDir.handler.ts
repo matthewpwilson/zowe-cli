@@ -38,10 +38,10 @@ export default class DirToUSSDirHandler extends ZosFilesBaseHandler {
         const attributesFile = path.join(inputDir,".zosattributes");
         let response;
         if (fs.existsSync(attributesFile)) {
-            const attributesFileContents = fs.readFileSync(attributesFile);
+            const attributesFileContents = fs.readFileSync(attributesFile).toString();
             const attributes = new ZosFilesAttributes(attributesFileContents);
             response = await Upload.dirToUSSDir(session, inputDir, commandParameters.arguments.USSDir,
-                commandParameters.arguments.binary, commandParameters.arguments.recursive, attributes);
+                commandParameters.arguments.binary, commandParameters.arguments.recursive, undefined, attributes);
         } else {
             const filesMap: IUploadMap = this.buildFilesMap(commandParameters);
 

@@ -25,6 +25,7 @@ import { List } from "../../../../src/api/methods/list/List";
 import { ZosFilesUtils } from "../../../../src/api/utils/ZosFilesUtils";
 import { stripNewLines } from "../../../../../../__tests__/__src__/TestUtils";
 import { Create } from "../../../../src/api/methods/create";
+import { ZosFilesAttributes } from "../../../../src/api";
 
 describe("z/OS Files - Upload", () => {
 
@@ -920,6 +921,39 @@ describe("z/OS Files - Upload", () => {
             expect(fileToUSSFileSpy).toHaveBeenCalledTimes(2);
             expect(createUssDirSpy).toHaveBeenCalledTimes(2);
             expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/file2.txt`)}`, `${dsName}/file2.txt`, null);
+        });
+        it("should upload files unless they are ignored by attributes", async () => {
+            const testReturn = {};
+            const testPath = "test/path";
+            isDirSpy.mockReturnValueOnce(true);
+            isDirectoryExistsSpy.mockReturnValueOnce(true);
+            getFileListFromPathSpy.mockReturnValueOnce(["uploadme", "ignoreme"]);
+            isDirSpy.mockReturnValueOnce(false);
+            pathNormalizeSpy.mockReturnValueOnce("test/path/uploadme");
+            fileToUSSFileSpy.mockReturnValue(testReturn);
+            isDirSpy.mockReturnValueOnce(false);
+            pathNormalizeSpy.mockReturnValueOnce("test/path/ignoreme");
+            fileToUSSFileSpy.mockReturnValue(testReturn);
+            promiseSpy.mockReturnValueOnce({});
+
+            const attributesMock: any = {};
+
+            attributesMock.fileShouldBeUploaded = jest.fn((filePath: string) => {
+                return filePath.endsWith("uploadme");
+            });
+
+            try {
+                USSresponse = await Upload.dirToUSSDir(dummySession, testPath, dsName,false,false,undefined,attributesMock);
+            } catch (err) {
+                error = err;
+            }
+
+            expect(error).toBeUndefined();
+            expect(USSresponse).toBeDefined();
+            expect(USSresponse.success).toBeTruthy();
+            expect(attributesMock.fileShouldBeUploaded).toHaveBeenCalledTimes(2);
+            expect(fileToUSSFileSpy).toHaveBeenCalledTimes(1);
+            expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/uploadme`)}`, `${dsName}/uploadme`, false);
         });
     });
 });
