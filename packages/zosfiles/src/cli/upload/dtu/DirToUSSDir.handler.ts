@@ -11,9 +11,10 @@
 
 import { AbstractSession, IHandlerParameters, TextUtils } from "@brightside/imperative";
 import { Upload } from "../../../api/methods/upload";
-import { IZosFilesResponse } from "../../../api";
+import { IZosFilesResponse, ZosFilesAttributes } from "../../../api";
 import { ZosFilesBaseHandler } from "../../ZosFilesBase.handler";
 import * as path from "path";
+import * as fs from "fs";
 import { IUploadMap } from "../../../api/methods/upload/doc/IUploadMap";
 
 /**
@@ -34,27 +35,41 @@ export default class DirToUSSDirHandler extends ZosFilesBaseHandler {
             inputDir = path.resolve(commandParameters.arguments.inputDir);
         }
 
-        // build filesMap argument
-        let filesMap: IUploadMap = null;
+        const attributesFile = path.join(inputDir,".zosattributes");
+        let response;
+        if (fs.existsSync(attributesFile)) {
+            const attributesFileContents = fs.readFileSync(attributesFile);
+            const attributes = new ZosFilesAttributes(attributesFileContents);
+            response = await Upload.dirToUSSDir(session, inputDir, commandParameters.arguments.USSDir,
+                commandParameters.arguments.binary, commandParameters.arguments.recursive, attributes);
+        } else {
+            const filesMap: IUploadMap = this.buildFilesMap(commandParameters);
 
-        // checking if binary-files or ascii-files are used, and update filesMap argument
-        if(commandParameters.arguments.binaryFiles) {
-            filesMap = {
-                binary : true,
-                fileNames : commandParameters.arguments.binaryFiles.split(",").map((fileName: string) => fileName.trim()),
-            };
-        }
-        if(commandParameters.arguments.asciiFiles) {
-            filesMap = {
-                binary : false,
-                fileNames : commandParameters.arguments.asciiFiles.split(",").map((fileName: string) => fileName.trim()),
-            };
+            response = await Upload.dirToUSSDir(session, inputDir, commandParameters.arguments.USSDir,
+                commandParameters.arguments.binary, commandParameters.arguments.recursive, filesMap);
         }
 
-        const response = await Upload.dirToUSSDir(session, inputDir, commandParameters.arguments.USSDir,
-            commandParameters.arguments.binary, commandParameters.arguments.recursive, filesMap);
         const formatMessage = TextUtils.prettyJson(response.apiResponse);
         commandParameters.response.console.log(formatMessage);
         return response;
+    }
+
+    private buildFilesMap(commandParameters: IHandlerParameters) {
+        let filesMap: IUploadMap = null;
+
+        // checking if binary-files or ascii-files are used, and update filesMap argument
+        if (commandParameters.arguments.binaryFiles) {
+            filesMap = {
+                binary: true,
+                fileNames: commandParameters.arguments.binaryFiles.split(",").map((fileName: string) => fileName.trim()),
+            };
+        }
+        if (commandParameters.arguments.asciiFiles) {
+            filesMap = {
+                binary: false,
+                fileNames: commandParameters.arguments.asciiFiles.split(",").map((fileName: string) => fileName.trim()),
+            };
+        }
+        return filesMap;
     }
 }

@@ -58,6 +58,8 @@
   "dependencies":   {
     "@brightside/imperative": "^2.1.1-alpha.201902201501",
     "js-yaml": "3.9.0",
+    "minimatch": "^3.0.4",
+    "@types/minimatch": "^3.0.3",
     "string-width": "2.1.1"
   },
   "devDependencies":   {

@@ -9,14 +9,14 @@
 *
 */
 
-import { Imperative, Session } from "@brightside/imperative";
+import { Imperative, Session, ImperativeError } from "@brightside/imperative";
 import * as path from "path";
 import { runCliScript, getUniqueDatasetName } from "../../../../../../../__tests__/__src__/TestUtils";
 import { TestEnvironment } from "../../../../../../../__tests__/__src__/environment/TestEnvironment";
 import { ITestEnvironment } from "../../../../../../../__tests__/__src__/environment/doc/response/ITestEnvironment";
 import { TestProperties } from "../../../../../../../__tests__/__src__/properties/TestProperties";
 import { ITestSystemSchema } from "../../../../../../../__tests__/__src__/properties/ITestSystemSchema";
-import { ZosFilesConstants } from "../../../../../index";
+import { Get, ZosFilesConstants } from "../../../../../index";
 import { ZosmfRestClient } from "../../../../../../rest";
 
 let REAL_SESSION: Session;
@@ -246,6 +246,35 @@ describe("Upload directory to USS", () => {
             expect(stdoutText).toContain("\"stdout\": \"success: true");
             expect(stdoutText).toContain(
                 "\"commandResponse\": \"Directory uploaded successfully.\"");
+        });
+    });
+
+    describe ("Scenarios using the .zosattributes file", () => {
+        it.only("should ignore files marked with a -", async () => {
+            const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_ignored_files");
+            const shellScript = path.join(__dirname, "__scripts__", "command", "command_upload_dtu.sh");
+
+            const response = runCliScript(shellScript, TEST_ENVIRONMENT,
+                [
+                    localDirName,
+                    ussname
+                ]);
+
+            expect(response.stderr.toString()).toBe("");
+            expect(response.status).toBe(0);
+            const stdoutText = response.stdout.toString();
+            expect(stdoutText).toContain("Directory uploaded successfully.");
+
+
+            try {
+                await Get.USSFile(REAL_SESSION, path.join(ussname,"foo.ignoreme"));
+                fail("USS file foo.stuff should not have been transferred");
+            } catch (err) {
+                expect(err).toBeDefined();
+                console.log(err);
+            }
+
+
         });
     });
 });
