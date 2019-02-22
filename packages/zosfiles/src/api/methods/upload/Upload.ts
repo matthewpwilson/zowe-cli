@@ -487,29 +487,25 @@ export class Upload {
         }
 
         if(recursive === false) {
-            let files = ZosFilesUtils.getFileListFromPath(inputDirectory, false);
-            if (attributes) {
-                files = files.filter((fileName) =>  {
-                    const filePath = path.normalize(path.join(inputDirectory, fileName));
-                    return attributes.fileShouldBeUploaded(filePath);
-                });
-            }
+            const files = ZosFilesUtils.getFileListFromPath(inputDirectory, false);
 
             await Promise.all(files.map(async (fileName) => {
                 const filePath = path.normalize(path.join(inputDirectory, fileName));
                 if(!IO.isDir(filePath)) {
-                    let tempBinary;
-                    if(filesMap) {
-                        if(filesMap.fileNames.indexOf(fileName) > -1) {
-                            tempBinary = filesMap.binary;
+                    if (attributes === undefined || (attributes && attributes.fileShouldBeUploaded(filePath))) {
+                        let tempBinary;
+                        if(filesMap) {
+                            if(filesMap.fileNames.indexOf(fileName) > -1) {
+                                tempBinary = filesMap.binary;
+                            } else {
+                                tempBinary = binary;
+                            }
                         } else {
                             tempBinary = binary;
                         }
-                    } else {
-                        tempBinary = binary;
+                        const ussFilePath = path.posix.join(ussname, fileName);
+                        await this.fileToUSSFile(session, filePath, ussFilePath, tempBinary);
                     }
-                    const ussFilePath = path.posix.join(ussname, fileName);
-                    await this.fileToUSSFile(session, filePath, ussFilePath, tempBinary);
                 }
             }));
         } else {

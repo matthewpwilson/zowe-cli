@@ -271,7 +271,6 @@ describe("Upload directory to USS", () => {
                 fail("USS file foo.stuff should not have been transferred");
             } catch (err) {
                 expect(err).toBeDefined();
-                console.log(err);
             }
 
 

@@ -922,22 +922,20 @@ describe("z/OS Files - Upload", () => {
             expect(createUssDirSpy).toHaveBeenCalledTimes(2);
             expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/file2.txt`)}`, `${dsName}/file2.txt`, null);
         });
-        it("should upload files unless they are ignored by attributes", async () => {
+        it.only("should upload files unless they are ignored by attributes", async () => {
             const testReturn = {};
             const testPath = "test/path";
-            isDirSpy.mockReturnValueOnce(true);
-            isDirectoryExistsSpy.mockReturnValueOnce(true);
-            getFileListFromPathSpy.mockReturnValueOnce(["uploadme", "ignoreme"]);
-            isDirSpy.mockReturnValueOnce(false);
-            pathNormalizeSpy.mockReturnValueOnce("test/path/uploadme");
-            fileToUSSFileSpy.mockReturnValue(testReturn);
-            isDirSpy.mockReturnValueOnce(false);
-            pathNormalizeSpy.mockReturnValueOnce("test/path/ignoreme");
+            isDirSpy.mockReturnValueOnce(true)
+                    .mockReturnValue(false);
+
+            isDirectoryExistsSpy.mockReturnValue(true);
+            getFileListFromPathSpy.mockReturnValue(["uploadme", "ignoreme"]);
+            pathNormalizeSpy.mockReturnValue("test/path/ignoreme")
+                            .mockReturnValueOnce("test/path/uploadme");
             fileToUSSFileSpy.mockReturnValue(testReturn);
             promiseSpy.mockReturnValueOnce({});
 
             const attributesMock: any = {};
-
             attributesMock.fileShouldBeUploaded = jest.fn((filePath: string) => {
                 return filePath.endsWith("uploadme");
             });
@@ -951,6 +949,7 @@ describe("z/OS Files - Upload", () => {
             expect(error).toBeUndefined();
             expect(USSresponse).toBeDefined();
             expect(USSresponse.success).toBeTruthy();
+            expect(pathNormalizeSpy).toHaveBeenCalledTimes(2);
             expect(attributesMock.fileShouldBeUploaded).toHaveBeenCalledTimes(2);
             expect(fileToUSSFileSpy).toHaveBeenCalledTimes(1);
             expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/uploadme`)}`, `${dsName}/uploadme`, false);
