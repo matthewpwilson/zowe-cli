@@ -47,6 +47,12 @@ describe("ZosFilesAttributes", () => {
             expect(testable.fileShouldBeUploaded("bar.stuff")).toBeFalsy();
         });
 
+        it("ignores files within directories matched by a *", () => {
+            const attributesFileContents = "*.stuff -";
+            const testable = new ZosFilesAttributes(attributesFileContents);
+            expect(testable.fileShouldBeUploaded("/a/nestted/path/to/foo.stuff")).toBeFalsy();
+        });
+
         it("ignores files matched files when there are multiple patterns", () => {
             const attributesFileContents = "*.stuff -\n*.bin -";
             const testable = new ZosFilesAttributes(attributesFileContents);

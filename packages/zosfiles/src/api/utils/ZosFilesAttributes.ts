@@ -31,11 +31,11 @@ export class ZosFilesAttributes {
         this.ignoredFiles.forEach((pattern) => {
             if (pattern.startsWith("!")) {
                 pattern = pattern.substring(1);
-                if (minimatch(path,pattern)) {
+                if (minimatch(path,pattern,{matchBase: true })) {
                     upload = true;
                 }
             } else {
-                if (minimatch(path,pattern)) {
+                if (minimatch(path,pattern,{matchBase: true })) {
                     upload = false;
                 }
             }
