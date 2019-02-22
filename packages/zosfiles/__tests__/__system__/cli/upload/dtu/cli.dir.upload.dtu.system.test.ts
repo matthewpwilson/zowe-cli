@@ -11,6 +11,7 @@
 
 import { Imperative, Session, ImperativeError } from "@brightside/imperative";
 import * as path from "path";
+import * as fs from "fs";
 import { runCliScript, getUniqueDatasetName } from "../../../../../../../__tests__/__src__/TestUtils";
 import { TestEnvironment } from "../../../../../../../__tests__/__src__/environment/TestEnvironment";
 import { ITestEnvironment } from "../../../../../../../__tests__/__src__/environment/doc/response/ITestEnvironment";
@@ -250,7 +251,7 @@ describe("Upload directory to USS", () => {
     });
 
     describe ("Scenarios using the .zosattributes file", () => {
-        it.only("should ignore files marked with a -", async () => {
+        it("should ignore files marked with a -", async () => {
             const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_ignored_files");
             const shellScript = path.join(__dirname, "__scripts__", "command", "command_upload_dtu.sh");
 
@@ -274,6 +275,29 @@ describe("Upload directory to USS", () => {
             }
 
 
+        });
+        it.only("should upload files in binary or text as indicated", async () => {
+            const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_mixed_files");
+            const shellScript = path.join(__dirname, "__scripts__", "command", "command_upload_dtu.sh");
+
+            const response = runCliScript(shellScript, TEST_ENVIRONMENT,
+                [
+                    localDirName,
+                    ussname
+                ]);
+
+            expect(response.stderr.toString()).toBe("");
+            expect(response.status).toBe(0);
+            const stdoutText = response.stdout.toString();
+            expect(stdoutText).toContain("Directory uploaded successfully.");
+
+            const remoteTextFileBuffer = await Get.USSFile(REAL_SESSION, path.join(ussname,"foo.text"));
+            const localTextFileBuffer = fs.readFileSync(path.join(localDirName,"foo.text"));
+            expect(remoteTextFileBuffer.equals(localTextFileBuffer)).toBeTruthy();
+
+            const remoteBinaryFileBuffer = await Get.USSFile(REAL_SESSION, path.join(ussname,"bar.binary"),{binary: true});
+            const localBinaryFileBuffer = fs.readFileSync(path.join(localDirName,"foo.text"));
+            expect(remoteBinaryFileBuffer.equals(localBinaryFileBuffer)).toBeTruthy();
         });
     });
 });

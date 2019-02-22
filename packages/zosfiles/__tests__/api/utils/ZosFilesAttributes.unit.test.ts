@@ -60,7 +60,10 @@ describe("ZosFilesAttributes", () => {
             expect(testable.fileShouldBeUploaded("bar.bin")).toBeFalsy();
         });
 
-        it("does not ignore files matched by negated patterns", () => {
+        // I don't think we want negated patterns.
+        // I think this should be "*.stuff ISO8859-1 ISO8859-1 "
+        // Come back to this when encodings are implemented.
+        it.skip("does not ignore files matched by negated patterns", () => {
             const attributesFileContents = "!*.stuff -";
             const testable = new ZosFilesAttributes(attributesFileContents);
             expect(testable.fileShouldBeUploaded("foo.stuff")).toBeTruthy();
@@ -73,6 +76,9 @@ describe("ZosFilesAttributes", () => {
             expect(testable.fileShouldBeUploaded("bar.stuff")).toBeFalsy();
         });
 
+        // Don't want negated patterns. I think this test should be 
+        // "foo.stuff ISO8859-1 ISO8859-1\n*.stuff -"
+        // Come back to this when encodings are implemented
         it.skip("ignores files according to the most specific pattern, regardless of order", () => {
             const attributesFileContents = "!foo.stuff -\n*.stuff -";
             const testable = new ZosFilesAttributes(attributesFileContents);
