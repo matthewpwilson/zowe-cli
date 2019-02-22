@@ -922,7 +922,7 @@ describe("z/OS Files - Upload", () => {
             expect(createUssDirSpy).toHaveBeenCalledTimes(2);
             expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/file2.txt`)}`, `${dsName}/file2.txt`, null);
         });
-        it.only("should upload files unless they are ignored by attributes", async () => {
+        it("should upload files unless they are ignored by attributes", async () => {
             const testReturn = {};
             const testPath = "test/path";
             isDirSpy.mockReturnValueOnce(true)
@@ -930,10 +930,9 @@ describe("z/OS Files - Upload", () => {
 
             isDirectoryExistsSpy.mockReturnValue(true);
             getFileListFromPathSpy.mockReturnValue(["uploadme", "ignoreme"]);
-            pathNormalizeSpy.mockReturnValue("test/path/ignoreme")
-                            .mockReturnValueOnce("test/path/uploadme");
             fileToUSSFileSpy.mockReturnValue(testReturn);
-            promiseSpy.mockReturnValueOnce({});
+            pathNormalizeSpy.mockRestore();
+            promiseSpy.mockRestore();
 
             const attributesMock: any = {};
             attributesMock.fileShouldBeUploaded = jest.fn((filePath: string) => {
@@ -949,7 +948,6 @@ describe("z/OS Files - Upload", () => {
             expect(error).toBeUndefined();
             expect(USSresponse).toBeDefined();
             expect(USSresponse.success).toBeTruthy();
-            expect(pathNormalizeSpy).toHaveBeenCalledTimes(2);
             expect(attributesMock.fileShouldBeUploaded).toHaveBeenCalledTimes(2);
             expect(fileToUSSFileSpy).toHaveBeenCalledTimes(1);
             expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/uploadme`)}`, `${dsName}/uploadme`, false);
