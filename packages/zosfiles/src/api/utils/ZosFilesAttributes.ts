@@ -12,6 +12,7 @@
 
 import * as minimatch from "minimatch";
 
+export enum TransferMode {BINARY, TEXT}
 
 /**
  * Attributes for a set of files
@@ -43,6 +44,9 @@ export class ZosFilesAttributes {
         return upload;
     }
 
+    public getFileTransferMode(path: string): TransferMode {
+        return undefined;
+    }
     private parse(attributesFileContents: string) {
         const lines = attributesFileContents.split("\n");
         lines.forEach((line) => {

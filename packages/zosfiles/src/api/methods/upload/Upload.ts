@@ -24,7 +24,7 @@ import { IUploadOptions } from "./doc/IUploadOptions";
 import { IUploadResult } from "./doc/IUploadResult";
 import { Create } from "../create";
 import { IUploadMap } from "./doc/IUploadMap";
-import { ZosFilesAttributes } from "../../utils/ZosFilesAttributes";
+import { ZosFilesAttributes, TransferMode } from "../../utils/ZosFilesAttributes";
 
 export class Upload {
 
@@ -492,20 +492,24 @@ export class Upload {
             await Promise.all(files.map(async (fileName) => {
                 const filePath = path.normalize(path.join(inputDirectory, fileName));
                 if(!IO.isDir(filePath)) {
-                    if (attributes === undefined || (attributes && attributes.fileShouldBeUploaded(filePath))) {
-                        let tempBinary;
-                        if(filesMap) {
-                            if(filesMap.fileNames.indexOf(fileName) > -1) {
-                                tempBinary = filesMap.binary;
-                            } else {
-                                tempBinary = binary;
-                            }
+                    let tempBinary;
+                    if(attributes) {
+                        if (attributes.fileShouldBeUploaded(filePath)) {
+                            tempBinary = attributes.getFileTransferMode(filePath) === TransferMode.BINARY;
+                        } else {
+                            return;
+                        }
+                    } else if (filesMap) {
+                        if(filesMap.fileNames.indexOf(fileName) > -1) {
+                            tempBinary = filesMap.binary;
                         } else {
                             tempBinary = binary;
                         }
-                        const ussFilePath = path.posix.join(ussname, fileName);
-                        await this.fileToUSSFile(session, filePath, ussFilePath, tempBinary);
+                    } else {
+                        tempBinary = binary;
                     }
+                    const ussFilePath = path.posix.join(ussname, fileName);
+                    await this.fileToUSSFile(session, filePath, ussFilePath, tempBinary);
                 }
             }));
         } else {

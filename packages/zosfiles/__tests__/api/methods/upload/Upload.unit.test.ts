@@ -25,7 +25,7 @@ import { List } from "../../../../src/api/methods/list/List";
 import { ZosFilesUtils } from "../../../../src/api/utils/ZosFilesUtils";
 import { stripNewLines } from "../../../../../../__tests__/__src__/TestUtils";
 import { Create } from "../../../../src/api/methods/create";
-import { ZosFilesAttributes } from "../../../../src/api";
+import { ZosFilesAttributes, TransferMode } from "../../../../src/api";
 
 describe("z/OS Files - Upload", () => {
 
@@ -934,10 +934,12 @@ describe("z/OS Files - Upload", () => {
             pathNormalizeSpy.mockRestore();
             promiseSpy.mockRestore();
 
-            const attributesMock: any = {};
+            const MockZosAttributes = jest.fn<ZosFilesAttributes>();
+            const attributesMock = new MockZosAttributes();
             attributesMock.fileShouldBeUploaded = jest.fn((filePath: string) => {
                 return filePath.endsWith("uploadme");
             });
+            attributesMock.getFileTransferMode = jest.fn(() => false);
 
             try {
                 USSresponse = await Upload.dirToUSSDir(dummySession, testPath, dsName,false,false,undefined,attributesMock);
@@ -951,6 +953,35 @@ describe("z/OS Files - Upload", () => {
             expect(attributesMock.fileShouldBeUploaded).toHaveBeenCalledTimes(2);
             expect(fileToUSSFileSpy).toHaveBeenCalledTimes(1);
             expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/uploadme`)}`, `${dsName}/uploadme`, false);
+        });
+        it("should upload files in text or binary according to attributes", async () => {
+            const testReturn = {};
+            const testPath = "test/path";
+            isDirSpy.mockReturnValueOnce(true)
+                    .mockReturnValue(false);
+            isDirectoryExistsSpy.mockReturnValue(true);
+            getFileListFromPathSpy.mockReturnValue(["textfile", "binaryfile"]);
+            fileToUSSFileSpy.mockReturnValue(testReturn);
+            pathNormalizeSpy.mockRestore();
+            promiseSpy.mockRestore();
+            const MockZosAttributes = jest.fn<ZosFilesAttributes>();
+            const attributesMock = new MockZosAttributes();
+            attributesMock.fileShouldBeUploaded = jest.fn(() => true);
+            attributesMock.getFileTransferMode = jest.fn((filePath: string) => {
+                if (filePath.endsWith("textfile")) {
+                    return TransferMode.TEXT;
+                } else {
+                    return TransferMode.BINARY;
+                }
+            });
+
+            USSresponse = await Upload.dirToUSSDir(dummySession, testPath, dsName,false,false,undefined,attributesMock);
+
+            expect(USSresponse).toBeDefined();
+            expect(USSresponse.success).toBeTruthy();
+            expect(fileToUSSFileSpy).toHaveBeenCalledTimes(2);
+            expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/textfile`)}`, `${dsName}/textfile`, false);
+            expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/binaryfile`)}`, `${dsName}/binaryfile`, true);
         });
     });
 });
