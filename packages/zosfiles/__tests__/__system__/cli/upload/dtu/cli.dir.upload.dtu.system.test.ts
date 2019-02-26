@@ -276,7 +276,7 @@ describe("Upload directory to USS", () => {
 
 
         });
-        it.only("should upload files in binary or text as indicated", async () => {
+        it("should upload files in binary or text as indicated", async () => {
             const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_mixed_files");
             const shellScript = path.join(__dirname, "__scripts__", "command", "command_upload_dtu.sh");
 
@@ -296,7 +296,7 @@ describe("Upload directory to USS", () => {
             expect(remoteTextFileBuffer.equals(localTextFileBuffer)).toBeTruthy();
 
             const remoteBinaryFileBuffer = await Get.USSFile(REAL_SESSION, path.join(ussname,"bar.binary"),{binary: true});
-            const localBinaryFileBuffer = fs.readFileSync(path.join(localDirName,"foo.text"));
+            const localBinaryFileBuffer = fs.readFileSync(path.join(localDirName,"bar.binary"));
             expect(remoteBinaryFileBuffer.equals(localBinaryFileBuffer)).toBeTruthy();
         });
     });

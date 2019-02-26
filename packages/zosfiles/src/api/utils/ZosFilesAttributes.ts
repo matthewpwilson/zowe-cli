@@ -19,10 +19,10 @@ export enum TransferMode {BINARY, TEXT}
  */
 export class ZosFilesAttributes {
 
-    private ignoredFiles: string[];
+    private ignoredFiles: string[] = [];
+    private binaryFiles = new Map<string,TransferMode>();
 
     constructor(attributesFileContents: string) {
-        this.ignoredFiles = [];
         this.parse(attributesFileContents);
     }
 
@@ -45,14 +45,30 @@ export class ZosFilesAttributes {
     }
 
     public getFileTransferMode(path: string): TransferMode {
-        return undefined;
+        let result = TransferMode.TEXT;
+        this.binaryFiles.forEach((mode, pattern) => {
+            if (minimatch(path,pattern,{matchBase: true })) {
+               result = mode;
+            }
+        });
+        return result;
     }
+
     private parse(attributesFileContents: string) {
         const lines = attributesFileContents.split("\n");
         lines.forEach((line) => {
             const parts = line.split(/\s+/);
-            if (parts[1] === "-") {
-                this.ignoredFiles.push(parts[0]);
+            const pattern = parts[0];
+            const localEncoding = parts[1];
+            const remoteEncoding = parts[2];
+
+            if (localEncoding === "-") {
+                this.ignoredFiles.push(pattern);
+            }
+            if (localEncoding === remoteEncoding) {
+                this.binaryFiles.set(pattern,TransferMode.BINARY);
+            } else {
+                this.binaryFiles.set(pattern,TransferMode.TEXT);
             }
          });
     }

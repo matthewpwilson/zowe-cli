@@ -10,7 +10,7 @@
 */
 
 
-import { ZosFilesAttributes } from "../../../src/api/utils/ZosFilesAttributes";
+import { ZosFilesAttributes, TransferMode } from "../../../src/api/utils/ZosFilesAttributes";
 
 
 describe("ZosFilesAttributes", () => {
@@ -76,7 +76,7 @@ describe("ZosFilesAttributes", () => {
             expect(testable.fileShouldBeUploaded("bar.stuff")).toBeFalsy();
         });
 
-        // Don't want negated patterns. I think this test should be 
+        // Don't want negated patterns. I think this test should be
         // "foo.stuff ISO8859-1 ISO8859-1\n*.stuff -"
         // Come back to this when encodings are implemented
         it.skip("ignores files according to the most specific pattern, regardless of order", () => {
@@ -84,6 +84,34 @@ describe("ZosFilesAttributes", () => {
             const testable = new ZosFilesAttributes(attributesFileContents);
             expect(testable.fileShouldBeUploaded("foo.stuff")).toBeTruthy();
             expect(testable.fileShouldBeUploaded("bar.stuff")).toBeFalsy();
+        });
+    });
+    describe("Transfer mode", () => {
+        it("gives binary transfer for a single file specifying binary", () => {
+            const testable = new ZosFilesAttributes("foo.binary binary binary");
+            expect(testable.getFileTransferMode("foo.binary")).toBe(TransferMode.BINARY);
+        });
+
+        it("gives binary transfer when the same local and remote encodings are used", () => {
+            const testable = new ZosFilesAttributes("foo.binary ISO8859-1 ISO8859-1");
+            expect(testable.getFileTransferMode("foo.binary")).toBe(TransferMode.BINARY);
+        });
+
+        it("gives text transfer when different local and remote encodings are used", () => {
+            const testable = new ZosFilesAttributes("foo.text ISO8859-1 EBCDIC");
+            expect(testable.getFileTransferMode("foo.text")).toBe(TransferMode.TEXT);
+        });
+
+        it("gives binary transfer with a paterrn", () => {
+            const testable = new ZosFilesAttributes("*.binary ISO8859-1 ISO8859-1");
+            expect(testable.getFileTransferMode("foo.binary")).toBe(TransferMode.BINARY);
+        });
+
+        it("let last pattern determine transfer mode", () => {
+            const testable = new ZosFilesAttributes("*.binary ISO8859-1 ISO8859-1\n" +
+                                                    "not.binary ISO8859-1 EBCDIC");
+            expect(testable.getFileTransferMode("foo.binary")).toBe(TransferMode.BINARY);
+            expect(testable.getFileTransferMode("not.binary")).toBe(TransferMode.TEXT);
         });
     });
 });
