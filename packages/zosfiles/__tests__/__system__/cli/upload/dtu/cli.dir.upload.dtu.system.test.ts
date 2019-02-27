@@ -316,8 +316,8 @@ describe("Upload directory to USS", () => {
             expect(stdoutText).toContain("Directory uploaded successfully.");
 
             const request: object = {request:"chtag",
-                                     action: "list"}
-            let result = await ZosmfRestClient.putExpectJSON<any>(REAL_SESSION,
+                                     action: "list"};
+            const result = await ZosmfRestClient.putExpectJSON<any>(REAL_SESSION,
                                            ZosFilesConstants.RESOURCE + "/" + ZosFilesConstants.RES_USS_FILES + "/" + ussname + "/" + "baz.asciitext",
                                            [Headers.APPLICATION_JSON],
                                            request);

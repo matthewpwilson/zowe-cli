@@ -11,7 +11,6 @@
 
 
 import * as minimatch from "minimatch";
-import FileToDataSetHandler from "../../cli/upload/ftds/FileToDataSet.handler";
 
 export enum TransferMode {BINARY, TEXT}
 
@@ -22,9 +21,12 @@ interface IUploadAttributes {
 }
 
 /**
- * Attributes for a set of files
+ * Attributes for a set of files relating to how they will be uploaded to USS
  */
 export class ZosFilesAttributes {
+
+    private static MAX_EXPECTED_FIELDS = 3;
+    private static MIN_EXPECTED_FIELDS = 2;
 
     private attributes = new Map<string,IUploadAttributes>();
 
@@ -57,7 +59,7 @@ export class ZosFilesAttributes {
     public getRemoteEncoding(path: string): string {
         const attributes = this.findLastMatchingAttributes(path);
         if (attributes === null) {
-            return "binary";
+            return "ISO8859-1";
         }
 
         return attributes.remoteEncoding;
@@ -65,11 +67,17 @@ export class ZosFilesAttributes {
 
     private parse(attributesFileContents: string) {
         const lines = attributesFileContents.split("\n");
+        let lineNumber = 0;
         lines.forEach((line) => {
-            const parts = line.split(/\s+/);
+            lineNumber++;
+            const parts = line.trim().split(/\s+/);
             const pattern = parts[0];
             const localEncoding = parts[1];
             const remoteEncoding = parts[2];
+
+            if (parts.length > ZosFilesAttributes.MAX_EXPECTED_FIELDS || parts.length < ZosFilesAttributes.MIN_EXPECTED_FIELDS) {
+                throw new Error("Syntax error on line " + lineNumber + " - expected <pattern> <local encoding> <remote encoding>.");
+            }
 
             if (localEncoding === "-") {
                 this.attributes.set(pattern, {ignore: true});

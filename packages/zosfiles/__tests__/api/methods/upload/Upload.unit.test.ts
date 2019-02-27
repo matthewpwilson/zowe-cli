@@ -973,11 +973,11 @@ describe("z/OS Files - Upload", () => {
                 expect(USSresponse).toBeDefined();
                 expect(USSresponse.success).toBeTruthy();
                 expect(fileToUSSFileSpy).toHaveBeenCalledTimes(2);
-                expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, 
-                                                             `${path.normalize(`${testPath}/textfile`)}`, 
+                expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession,
+                                                             `${path.normalize(`${testPath}/textfile`)}`,
                                                              `${dsName}/textfile`,
                                                               false);
-                expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, 
+                expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession,
                                                              `${path.normalize(`${testPath}/binaryfile`)}`,
                                                              `${dsName}/binaryfile`, true);
             });

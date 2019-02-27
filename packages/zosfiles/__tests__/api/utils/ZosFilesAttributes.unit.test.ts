@@ -16,7 +16,7 @@ import { ZosFilesAttributes, TransferMode } from "../../../src/api/utils/ZosFile
 describe("ZosFilesAttributes", () => {
     describe("Ignoring", () => {
         it("does not ignore files not mentioned in .zosattributes", () => {
-            const testable = new ZosFilesAttributes("");
+            const testable = new ZosFilesAttributes("fred -");
             expect(testable.fileShouldBeUploaded("foo.stuff")).toBeTruthy();
         });
 
@@ -96,12 +96,65 @@ describe("ZosFilesAttributes", () => {
             expect(testable.getFileTransferMode("foo.binary")).toBe(TransferMode.BINARY);
             expect(testable.getFileTransferMode("not.binary")).toBe(TransferMode.TEXT);
         });
+
+        it("should default to binary if no pattern is matched", () => {
+            const testable = new ZosFilesAttributes("*.stuff ISO8859-1 EBCDIC");
+            expect(testable.getFileTransferMode("foo.binary")).toBe(TransferMode.BINARY);
+        });
     });
 
-    describe.skip("Remote encoding", () => {
+    describe("Remote encoding", () => {
         it("shuld return the remote encoding", () => {
             const testable = new ZosFilesAttributes("*.ascii ISO8859-1 ISO8859-1");
             expect(testable.getRemoteEncoding("foo.ascii")).toBe("ISO8859-1");
+        });
+
+        it("should default to ISO8859-1 if no pattern is matched", () => {
+            const testable = new ZosFilesAttributes("*.stuff binary binary");
+            expect(testable.getRemoteEncoding("foo.ascii")).toBe("ISO8859-1");
+        });
+    });
+
+    describe("File syntax", () => {
+        it("should treat lines beginning with # as comments", () => {
+            const testable = new ZosFilesAttributes("#foo.stuff -");
+            expect(testable.fileShouldBeUploaded("#foo.stuff")).toBeTruthy();
+        });
+
+        it("should ignore leading whitespace", () => {
+            const testable = new ZosFilesAttributes("   foo.stuff -");
+            expect(testable.fileShouldBeUploaded("foo.stuff")).toBeFalsy();
+        });
+
+        it("should ignore trailing whitespace", () => {
+            const testable = new ZosFilesAttributes("foo.stuff ISO8859-1 ISO8859-1    ");
+            expect(testable.getRemoteEncoding("foo.stuff")).toBe("ISO8859-1");
+        });
+
+        it("should complain if there are more than 3 fields per line", () => {
+            let error: Error;
+            try {
+                const attributes = new ZosFilesAttributes("foo.stuff ISO8859-1 ISO8859-1\n" +
+                                        "bar binary binary breakme");
+            } catch (err) {
+                error = err;
+            }
+
+            expect(error).toBeDefined();
+            expect(error.message).toBe("Syntax error on line 2 - expected <pattern> <local encoding> <remote encoding>.");
+        });
+
+        it("should complain if there are less than 2 fields per line", () => {
+            let error: Error;
+            try {
+                const attributes = new ZosFilesAttributes("foo.stuff ISO8859-1 ISO8859-1\n" +
+                                        "breakme");
+            } catch (err) {
+                error = err;
+            }
+
+            expect(error).toBeDefined();
+            expect(error.message).toBe("Syntax error on line 2 - expected <pattern> <local encoding> <remote encoding>.");
         });
     });
 });
