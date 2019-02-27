@@ -25,6 +25,7 @@ import { IUploadResult } from "./doc/IUploadResult";
 import { Create } from "../create";
 import { IUploadMap } from "./doc/IUploadMap";
 import { ZosFilesAttributes, TransferMode } from "../../utils/ZosFilesAttributes";
+import { Utilities, Tag } from "../utilities";
 
 export class Upload {
 
@@ -492,26 +493,25 @@ export class Upload {
             await Promise.all(files.map(async (fileName) => {
                 const filePath = path.normalize(path.join(inputDirectory, fileName));
                 if(!IO.isDir(filePath)) {
+                    const ussFilePath = path.posix.join(ussname, fileName);
                     let tempBinary;
                     if(attributes) {
-                        if (attributes.fileShouldBeUploaded(filePath)) {
-                            tempBinary = attributes.getFileTransferMode(filePath) === TransferMode.BINARY;
-                        } else {
-                            return;
-                        }
-                    } else if (filesMap) {
-                        if(filesMap.fileNames.indexOf(fileName) > -1) {
-                            tempBinary = filesMap.binary;
+                        await this.uploadFileAndTagBasedOnAttributes(filePath,ussFilePath,session,attributes);
+                    } else {
+                        if (filesMap) {
+                            if(filesMap.fileNames.indexOf(fileName) > -1) {
+                                tempBinary = filesMap.binary;
+                            } else {
+                                tempBinary = binary;
+                            }
                         } else {
                             tempBinary = binary;
                         }
-                    } else {
-                        tempBinary = binary;
+                        await this.fileToUSSFile(session, filePath, ussFilePath, tempBinary);
                     }
-                    const ussFilePath = path.posix.join(ussname, fileName);
-                    await this.fileToUSSFile(session, filePath, ussFilePath, tempBinary);
                 }
             }));
+
         } else {
             await this.dirToUSSDirRecursive(session, inputDirectory, ussname, binary, filesMap);
         }
@@ -548,6 +548,21 @@ export class Upload {
             }
         }
         return false;
+    }
+
+    private static async uploadFileAndTagBasedOnAttributes(localPath: string,
+                                                           ussPath: string,
+                                                           session: AbstractSession,
+                                                           attributes: ZosFilesAttributes) {
+        if (attributes.fileShouldBeUploaded(localPath)) {
+            const binary = attributes.getFileTransferMode(localPath) === TransferMode.BINARY;
+            await this.fileToUSSFile(session, localPath, ussPath, binary);
+            if (binary) {
+                await Utilities.chtag(session,ussPath,Tag.BINARY);
+            } else {
+                await Utilities.chtag(session,ussPath,Tag.TEXT,attributes.getRemoteEncoding(localPath));
+            }
+        }
     }
 
     /**

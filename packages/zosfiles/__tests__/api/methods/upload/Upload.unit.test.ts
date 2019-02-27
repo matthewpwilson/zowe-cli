@@ -22,10 +22,12 @@ import { ZosFilesConstants } from "../../../../src/api/constants/ZosFiles.consta
 import { IUploadOptions } from "../../../../src/api/methods/upload/doc/IUploadOptions";
 import { Upload } from "../../../../src/api/methods/upload/Upload";
 import { List } from "../../../../src/api/methods/list/List";
+import { Utilities } from "../../../../src/api/methods/utilities/Utilities";
+
 import { ZosFilesUtils } from "../../../../src/api/utils/ZosFilesUtils";
 import { stripNewLines } from "../../../../../../__tests__/__src__/TestUtils";
 import { Create } from "../../../../src/api/methods/create";
-import { ZosFilesAttributes, TransferMode } from "../../../../src/api";
+import { ZosFilesAttributes, TransferMode, Tag } from "../../../../src/api";
 
 describe("z/OS Files - Upload", () => {
 
@@ -940,6 +942,13 @@ describe("z/OS Files - Upload", () => {
                 return filePath.endsWith("uploadme");
             });
             attributesMock.getFileTransferMode = jest.fn(() => false);
+            attributesMock.getRemoteEncoding = jest.fn((filePath: string) => {
+                if (filePath.endsWith("textfile")) {
+                    return "ISO8859-1";
+                } else {
+                    return "binary";
+                }
+            });
 
             try {
                 USSresponse = await Upload.dirToUSSDir(dummySession, testPath, dsName,false,false,undefined,attributesMock);
@@ -974,6 +983,13 @@ describe("z/OS Files - Upload", () => {
                     return TransferMode.BINARY;
                 }
             });
+            attributesMock.getRemoteEncoding = jest.fn((filePath: string) => {
+                if (filePath.endsWith("textfile")) {
+                    return "ISO8859-1";
+                } else {
+                    return "binary";
+                }
+            });
 
             USSresponse = await Upload.dirToUSSDir(dummySession, testPath, dsName,false,false,undefined,attributesMock);
 
@@ -982,6 +998,45 @@ describe("z/OS Files - Upload", () => {
             expect(fileToUSSFileSpy).toHaveBeenCalledTimes(2);
             expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/textfile`)}`, `${dsName}/textfile`, false);
             expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/binaryfile`)}`, `${dsName}/binaryfile`, true);
+        });
+
+        it("should call API to tag files accord to remote encoding", async () => {
+            const testReturn = {};
+            const testPath = "test/path";
+            isDirSpy.mockReturnValueOnce(true)
+                    .mockReturnValue(false);
+            isDirectoryExistsSpy.mockReturnValue(true);
+            getFileListFromPathSpy.mockReturnValue(["textfile", "binaryfile"]);
+            fileToUSSFileSpy.mockReturnValue(testReturn);
+            pathNormalizeSpy.mockRestore();
+            promiseSpy.mockRestore();
+            const MockZosAttributes = jest.fn<ZosFilesAttributes>();
+            const attributesMock = new MockZosAttributes();
+            attributesMock.fileShouldBeUploaded = jest.fn(() => true);
+            attributesMock.getFileTransferMode = jest.fn((filePath: string) => {
+                if (filePath.endsWith("textfile")) {
+                    return TransferMode.TEXT;
+                } else {
+                    return TransferMode.BINARY;
+                }
+            });
+            attributesMock.getRemoteEncoding = jest.fn((filePath: string) => {
+                if (filePath.endsWith("textfile")) {
+                    return "ISO8859-1";
+                } else {
+                    return "binary";
+                }
+            });
+            const chtagSpy = jest.spyOn(Utilities,"chtag");
+            chtagSpy.mockReturnValue(testReturn);
+
+            USSresponse = await Upload.dirToUSSDir(dummySession, testPath, dsName,false,false,undefined,attributesMock);
+
+            expect(USSresponse).toBeDefined();
+            expect(USSresponse.success).toBeTruthy();
+            expect(chtagSpy).toHaveBeenCalledTimes(2);
+            expect(chtagSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${dsName}/textfile`)}`, Tag.TEXT, "ISO8859-1");
+            expect(chtagSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${dsName}/binaryfile`)}`, Tag.BINARY);
         });
     });
 });

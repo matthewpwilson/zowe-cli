@@ -21,6 +21,7 @@ export class ZosFilesAttributes {
 
     private ignoredFiles: string[] = [];
     private binaryFiles = new Map<string,TransferMode>();
+    
 
     constructor(attributesFileContents: string) {
         this.parse(attributesFileContents);
@@ -52,6 +53,10 @@ export class ZosFilesAttributes {
             }
         });
         return result;
+    }
+
+    public getRemoteEncoding(path: string): string {
+        return "";
     }
 
     private parse(attributesFileContents: string) {
