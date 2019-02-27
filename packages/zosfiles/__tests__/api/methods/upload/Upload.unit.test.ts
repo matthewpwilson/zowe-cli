@@ -995,6 +995,8 @@ describe("z/OS Files - Upload", () => {
                 expect(chtagSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${dsName}/textfile`)}`, Tag.TEXT, "ISO8859-1");
                 expect(chtagSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${dsName}/binaryfile`)}`, Tag.BINARY);
             });
+
+            it.skip("honours .zosattributes for recursive upload");
         });
     });
 });

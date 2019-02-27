@@ -11,52 +11,56 @@
 
 
 import * as minimatch from "minimatch";
+import FileToDataSetHandler from "../../cli/upload/ftds/FileToDataSet.handler";
 
 export enum TransferMode {BINARY, TEXT}
+
+interface IUploadAttributes {
+    ignore: boolean;
+    localEncoding?: string;
+    remoteEncoding?: string;
+}
 
 /**
  * Attributes for a set of files
  */
 export class ZosFilesAttributes {
 
-    private ignoredFiles: string[] = [];
-    private binaryFiles = new Map<string,TransferMode>();
-    
+    private attributes = new Map<string,IUploadAttributes>();
 
     constructor(attributesFileContents: string) {
         this.parse(attributesFileContents);
     }
 
     public fileShouldBeUploaded(path: string): boolean {
-        let upload = true;
+        const attributes = this.findLastMatchingAttributes(path);
+        if (attributes === null) {
+            return true;
+        }
 
-        this.ignoredFiles.forEach((pattern) => {
-            if (pattern.startsWith("!")) {
-                pattern = pattern.substring(1);
-                if (minimatch(path,pattern,{matchBase: true })) {
-                    upload = true;
-                }
-            } else {
-                if (minimatch(path,pattern,{matchBase: true })) {
-                    upload = false;
-                }
-            }
-        });
-        return upload;
+        return !attributes.ignore;
     }
 
     public getFileTransferMode(path: string): TransferMode {
-        let result = TransferMode.TEXT;
-        this.binaryFiles.forEach((mode, pattern) => {
-            if (minimatch(path,pattern,{matchBase: true })) {
-               result = mode;
-            }
-        });
-        return result;
+        const attributes = this.findLastMatchingAttributes(path);
+        if (attributes === null) {
+            return TransferMode.BINARY;
+        }
+
+        if (attributes.localEncoding === attributes.remoteEncoding) {
+            return TransferMode.BINARY;
+        } else {
+            return TransferMode.TEXT;
+        }
     }
 
     public getRemoteEncoding(path: string): string {
-        return "";
+        const attributes = this.findLastMatchingAttributes(path);
+        if (attributes === null) {
+            return "binary";
+        }
+
+        return attributes.remoteEncoding;
     }
 
     private parse(attributesFileContents: string) {
@@ -68,13 +72,20 @@ export class ZosFilesAttributes {
             const remoteEncoding = parts[2];
 
             if (localEncoding === "-") {
-                this.ignoredFiles.push(pattern);
-            }
-            if (localEncoding === remoteEncoding) {
-                this.binaryFiles.set(pattern,TransferMode.BINARY);
+                this.attributes.set(pattern, {ignore: true});
             } else {
-                this.binaryFiles.set(pattern,TransferMode.TEXT);
+                this.attributes.set(pattern, {ignore: false, localEncoding, remoteEncoding});
             }
          });
+    }
+
+    private findLastMatchingAttributes(path: string): IUploadAttributes {
+        let result: IUploadAttributes = null;
+        this.attributes.forEach((attributes, pattern) => {
+            if (minimatch(path,pattern,{matchBase: true })) {
+                result = attributes;
+            }
+        });
+        return result;
     }
 }
