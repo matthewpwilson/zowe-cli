@@ -10,11 +10,31 @@
 */
 
 import { IZosFilesResponse } from "../../doc/IZosFilesResponse";
-import { AbstractSession } from "@brightside/imperative";
+import { AbstractSession, ImperativeExpect, Headers } from "@brightside/imperative";
 import { Tag } from "./doc/Tag";
+import { ZosFilesMessages } from "../../constants/ZosFiles.messages";
+import { ZosFilesConstants } from "../../constants/ZosFiles.constants";
+import { ZosmfRestClient } from "../../../../../rest";
 
 export class Utilities {
     public static async chtag(session: AbstractSession, ussFileName: string, type: Tag, codeset?: string): Promise<IZosFilesResponse> {
-        return null;
+        ImperativeExpect.toNotBeNullOrUndefined(ussFileName,ZosFilesMessages.missingUSSFileName.message);
+
+        if (type === Tag.BINARY) {
+            ImperativeExpect.toBeEqual(codeset,undefined,"A codeset cannot be specified for a binary file.");
+        }
+
+        const url = ZosFilesConstants.RESOURCE + ZosFilesConstants.FS + "/testfile";
+        const payload = { request: "chtag", action: "set", type: type.valueOf()} as any;
+        if (codeset) {
+            payload.codeset = codeset;
+        }
+
+        await ZosmfRestClient.putExpectJSON(session,url,[Headers.APPLICATION_JSON],payload);
+
+        return {
+            success: true,
+            commandResponse: "File tagged successfully."
+        };
     }
 }

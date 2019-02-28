@@ -10,7 +10,7 @@
 */
 
 export enum Tag {
-    TEXT,
-    BINARY,
-    MIXED
+    TEXT = "text",
+    BINARY = "binary",
+    MIXED = "mixed"
 }
