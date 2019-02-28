@@ -41,6 +41,20 @@ exports[`Upload dir-to-uss handler process method should pass attributes when a 
   [33mto: [39m  nowhere
 
 
+uploaded
+[32m- [39m
+  [33msuccess: [39m[32mtrue[39m
+  [33mfrom: [39m   /somedir/test_dir
+  [33mto: [39m     USS_dir
+[32m- [39m
+  [33msuccess: [39m[31mfalse[39m
+  [33mfrom: [39m   testfrom
+  [33mto: [39m     testto
+[32m- [39m
+  [33mfrom: [39mdummy
+  [33mto: [39m  nowhere
+
+
 uploaded"
 `;
 

@@ -16,11 +16,20 @@ import * as fs from "fs";
 
 describe("Upload dir-to-uss handler", () => {
     describe("process method", () => {
-       let fakeSession: any = null;
-       const inputDir = "/somedir/test_dir";
-       const USSDir = "USS_dir";
+        let fakeSession: any = null;
+        const inputDir = "/somedir/test_dir";
+        const USSDir = "USS_dir";
+        let profFunc: jest.Mock;
+        let handler: any;
 
-       beforeEach(() => {
+        // Vars populated by the mocked function
+        let error: any;
+        let apiMessage = "";
+        let jsonObj: any;
+        let logMessage = "";
+
+        beforeEach(() => {
+
             // Mock the submit JCL function
             Upload.dirToUSSDir = jest.fn((session) => {
                 fakeSession = session;
@@ -34,21 +43,9 @@ describe("Upload dir-to-uss handler", () => {
                     ]
                 };
             });
-        });
-
-       it("should upload a directory to a USS directory if requested", async () => {
-            // Require the handler and create a new instance
-            const handlerReq = require("../../../../src/cli/upload/dtu/DirToUSSDir.handler");
-            const handler = new handlerReq.default();
-
-            // Vars populated by the mocked function
-            let error;
-            let apiMessage = "";
-            let jsonObj;
-            let logMessage = "";
 
             // Mocked function references
-            const profFunc = jest.fn((args) => {
+            profFunc = jest.fn((args) => {
                 return {
                     host: "fake",
                     port: "fake",
@@ -58,6 +55,13 @@ describe("Upload dir-to-uss handler", () => {
                     rejectUnauthorized: "fake",
                 };
             });
+
+            // Require the handler and create a new instance
+            const handlerReq = require("../../../../src/cli/upload/dtu/DirToUSSDir.handler");
+            handler = new handlerReq.default();
+        });
+
+        it("should upload a directory to a USS directory if requested", async () => {
 
             try {
                 // Invoke the handler with a full set of mocked arguments and response functions
@@ -112,32 +116,10 @@ describe("Upload dir-to-uss handler", () => {
             expect(apiMessage).toMatchSnapshot();
             expect(logMessage).toMatchSnapshot();
         });
-       it("should pass attributes when a .zosattributes file is present", async () => {
+        it("should pass attributes when a .zosattributes file is present", async () => {
             jest.spyOn(fs,"existsSync").mockReturnValue(true);
             const attributesContents = "foo.stuff -";
             const fsReadFileSync = jest.spyOn(fs,"readFileSync").mockReturnValue(Buffer.from(attributesContents));
-
-            // Require the handler and create a new instance
-            const handlerReq = require("../../../../src/cli/upload/dtu/DirToUSSDir.handler");
-            const handler = new handlerReq.default();
-
-            // Vars populated by the mocked function
-            let error;
-            let apiMessage = "";
-            let jsonObj;
-            let logMessage = "";
-
-            // Mocked function references
-            const profFunc = jest.fn((args) => {
-                return {
-                    host: "fake",
-                    port: "fake",
-                    user: "fake",
-                    password: "fake",
-                    auth: "fake",
-                    rejectUnauthorized: "fake",
-                };
-            });
 
             try {
                 // Invoke the handler with a full set of mocked arguments and response functions
