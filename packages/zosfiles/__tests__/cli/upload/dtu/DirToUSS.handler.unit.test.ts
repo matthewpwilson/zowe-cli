@@ -11,23 +11,16 @@
 
 import { Upload } from "../../../../src/api/methods/upload";
 import { UNIT_TEST_ZOSMF_PROF_OPTS } from "../../../../../../__tests__/__src__/mocks/ZosmfProfileMock";
+import { ZosFilesAttributes } from "../../../..";
+import * as fs from "fs";
 
 describe("Upload dir-to-uss handler", () => {
     describe("process method", () => {
-        it("should upload a directory to a USS directory if requested", async () => {
-            // Require the handler and create a new instance
-            const handlerReq = require("../../../../src/cli/upload/dtu/DirToUSSDir.handler");
-            const handler = new handlerReq.default();
-            const inputDir = "/somedir/test_dir";
-            const USSDir = "USS_dir";
+       let fakeSession: any = null;
+       const inputDir = "/somedir/test_dir";
+       const USSDir = "USS_dir";
 
-            // Vars populated by the mocked function
-            let error;
-            let apiMessage = "";
-            let jsonObj;
-            let logMessage = "";
-            let fakeSession = null;
-
+       beforeEach(() => {
             // Mock the submit JCL function
             Upload.dirToUSSDir = jest.fn((session) => {
                 fakeSession = session;
@@ -41,6 +34,18 @@ describe("Upload dir-to-uss handler", () => {
                     ]
                 };
             });
+        });
+
+       it("should upload a directory to a USS directory if requested", async () => {
+            // Require the handler and create a new instance
+            const handlerReq = require("../../../../src/cli/upload/dtu/DirToUSSDir.handler");
+            const handler = new handlerReq.default();
+
+            // Vars populated by the mocked function
+            let error;
+            let apiMessage = "";
+            let jsonObj;
+            let logMessage = "";
 
             // Mocked function references
             const profFunc = jest.fn((args) => {
@@ -103,6 +108,87 @@ describe("Upload dir-to-uss handler", () => {
             expect(profFunc).toHaveBeenCalledWith("zosmf", false);
             expect(Upload.dirToUSSDir).toHaveBeenCalledTimes(1);
             expect(Upload.dirToUSSDir).toHaveBeenCalledWith(fakeSession, inputDir, USSDir, undefined, undefined, null);
+            expect(jsonObj).toMatchSnapshot();
+            expect(apiMessage).toMatchSnapshot();
+            expect(logMessage).toMatchSnapshot();
+        });
+       it("should pass attributes when a .zosattributes file is present", async () => {
+            jest.spyOn(fs,"existsSync").mockReturnValue(true);
+            const attributesContents = "foo.stuff -";
+            const fsReadFileSync = jest.spyOn(fs,"readFileSync").mockReturnValue(Buffer.from(attributesContents));
+
+            // Require the handler and create a new instance
+            const handlerReq = require("../../../../src/cli/upload/dtu/DirToUSSDir.handler");
+            const handler = new handlerReq.default();
+
+            // Vars populated by the mocked function
+            let error;
+            let apiMessage = "";
+            let jsonObj;
+            let logMessage = "";
+
+            // Mocked function references
+            const profFunc = jest.fn((args) => {
+                return {
+                    host: "fake",
+                    port: "fake",
+                    user: "fake",
+                    password: "fake",
+                    auth: "fake",
+                    rejectUnauthorized: "fake",
+                };
+            });
+
+            try {
+                // Invoke the handler with a full set of mocked arguments and response functions
+                await handler.process({
+                    arguments: {
+                        $0: "fake",
+                        _: ["fake"],
+                        inputDir,
+                        USSDir,
+                        // binary: boolean,
+                        // recursive: boolean,
+                        // asciiFiles: "a,b,c",
+                        // binaryFiles: "a,b,c",
+                        ...UNIT_TEST_ZOSMF_PROF_OPTS
+                    },
+                    response: {
+                        data: {
+                            setMessage: jest.fn((setMsgArgs) => {
+                                apiMessage = setMsgArgs;
+                            }),
+                            setObj: jest.fn((setObjArgs) => {
+                                jsonObj = setObjArgs;
+                            })
+                        },
+                        console: {
+                            log: jest.fn((logArgs) => {
+                                logMessage += "\n" + logArgs;
+                            })
+                        },
+                        progress: {
+                            startBar: jest.fn((parms) => {
+                                // do nothing
+                            }),
+                            endBar: jest.fn(() => {
+                                // do nothing
+                            })
+                        }
+                    },
+                    profiles: {
+                        get: profFunc
+                    }
+                } as any);
+            } catch (e) {
+                error = e;
+            }
+
+            expect(error).toBeUndefined();
+            expect(profFunc).toHaveBeenCalledWith("zosmf", false);
+            expect(Upload.dirToUSSDir).toHaveBeenCalledTimes(1);
+            expect(Upload.dirToUSSDir).toHaveBeenCalledWith
+            (fakeSession, inputDir, USSDir, undefined, undefined, undefined, expect.any(ZosFilesAttributes));
             expect(jsonObj).toMatchSnapshot();
             expect(apiMessage).toMatchSnapshot();
             expect(logMessage).toMatchSnapshot();
