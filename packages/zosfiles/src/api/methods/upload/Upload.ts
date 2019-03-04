@@ -557,10 +557,11 @@ export class Upload {
         if (attributes.fileShouldBeUploaded(localPath)) {
             const binary = attributes.getFileTransferMode(localPath) === TransferMode.BINARY;
             await this.fileToUSSFile(session, localPath, ussPath, binary);
-            if (binary) {
+            const tag = attributes.getRemoteEncoding(localPath);
+            if (tag === Tag.BINARY.valueOf() ) {
                 await Utilities.chtag(session,ussPath,Tag.BINARY);
             } else {
-                await Utilities.chtag(session,ussPath,Tag.TEXT,attributes.getRemoteEncoding(localPath));
+                await Utilities.chtag(session,ussPath,Tag.TEXT,tag);
             }
         }
     }

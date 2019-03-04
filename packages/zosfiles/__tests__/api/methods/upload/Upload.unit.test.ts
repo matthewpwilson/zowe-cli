@@ -925,12 +925,15 @@ describe("z/OS Files - Upload", () => {
 
             const MockZosAttributes = jest.fn<ZosFilesAttributes>();
             const attributesMock = new MockZosAttributes();
+            const chtagSpy = jest.spyOn(Utilities,"chtag");
 
             beforeEach(() => {
                 pathNormalizeSpy.mockRestore();
                 promiseSpy.mockRestore();
+                chtagSpy.mockReset();
+                chtagSpy.mockReturnValue(testReturn);
                 isDirSpy.mockReturnValueOnce(true)
-                        .mockReturnValue(false);
+                .mockReturnValue(false);
                 isDirectoryExistsSpy.mockReturnValue(true);
                 fileToUSSFileSpy.mockReturnValue(testReturn);
 
@@ -942,7 +945,7 @@ describe("z/OS Files - Upload", () => {
                     }
                 });
                 attributesMock.getRemoteEncoding = jest.fn((filePath: string) => {
-                    if (filePath.endsWith("textfile")) {
+                    if (filePath.endsWith("textfile") || filePath.endsWith("asciifile")) {
                         return "ISO8859-1";
                     } else {
                         return "binary";
@@ -985,8 +988,7 @@ describe("z/OS Files - Upload", () => {
             it("should call API to tag files accord to remote encoding", async () => {
                 getFileListFromPathSpy.mockReturnValue(["textfile", "binaryfile"]);
                 attributesMock.fileShouldBeUploaded = jest.fn(() => true);
-                const chtagSpy = jest.spyOn(Utilities,"chtag");
-                chtagSpy.mockReturnValue(testReturn);
+
                 USSresponse = await Upload.dirToUSSDir(dummySession, testPath, dsName,false,false,undefined,attributesMock);
 
                 expect(USSresponse).toBeDefined();
@@ -996,7 +998,18 @@ describe("z/OS Files - Upload", () => {
                 expect(chtagSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${dsName}/binaryfile`)}`, Tag.BINARY);
             });
 
-            it.skip("honours .zosattributes for recursive upload");
+            it("should call API to tag a file as text that was uploaded in binary mode", async () => {
+                getFileListFromPathSpy.mockReturnValue(["asciifile"]);
+                attributesMock.fileShouldBeUploaded = jest.fn(() => true);
+                USSresponse = await Upload.dirToUSSDir(dummySession, testPath, dsName,false,false,undefined,attributesMock);
+
+                expect(USSresponse).toBeDefined();
+                expect(USSresponse.success).toBeTruthy();
+                expect(chtagSpy).toHaveBeenCalledTimes(1);
+                expect(chtagSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${dsName}/asciifile`)}`, Tag.TEXT, "ISO8859-1");
+            });
+
+            test.skip("honours .zosattributes for recursive upload");
         });
     });
 });

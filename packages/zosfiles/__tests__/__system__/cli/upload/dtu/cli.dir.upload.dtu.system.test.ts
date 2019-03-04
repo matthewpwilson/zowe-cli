@@ -300,7 +300,7 @@ describe("Upload directory to USS", () => {
             expect(remoteBinaryFileBuffer.equals(localBinaryFileBuffer)).toBeTruthy();
         });
 
-        it.only("should tag uploaded files according to remote encoding", async () => {
+        it("should tag uploaded files according to remote encoding", async () => {
             const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_mixed_files");
             const shellScript = path.join(__dirname, "__scripts__", "command", "command_upload_dtu.sh");
 
@@ -315,30 +315,28 @@ describe("Upload directory to USS", () => {
             const stdoutText = response.stdout.toString();
             expect(stdoutText).toContain("Directory uploaded successfully.");
 
+
+            let tag = await getTag(ussname + "/baz.asciitext");
+            expect(tag).toMatch("t ISO8859-1");
+
+            tag = await getTag(ussname + "/foo.text");
+            expect(tag).toMatch("t IBM-1047");
+
+            tag = await getTag(ussname + "/bar.binary");
+            expect(tag).toMatch("b binary");
+        });
+
+        async function getTag(ussPath: string) {
             const request: object = {request:"chtag",
                                      action: "list"};
             const url = ZosFilesConstants.RESOURCE + ZosFilesConstants.RES_USS_FILES
-                        + "/" + ussname + "/" + "baz.asciitext";
+                        + "/" + ussPath;
             Imperative.console.info("z/OSMF URL: "  + url);
-            const result = await ZosmfRestClient.putExpectJSON<any>(REAL_SESSION,
+            const response = await ZosmfRestClient.putExpectJSON<any>(REAL_SESSION,
                                            url,
                                            [Headers.APPLICATION_JSON, { [Headers.CONTENT_LENGTH] : JSON.stringify(request).length.toString() }],
                                            request);
-            expect(result.stdout).toMatch("t ISO8859-1");
-
-            // result = await ZosmfRestClient.putExpectJSON(REAL_SESSION,
-            //     ZosFilesConstants.RESOURCE + ZosFilesConstants.RES_USS_FILES + "/" + ussname + "/" + "foo.text",
-            //     [Headers.APPLICATION_JSON],
-            //     { request: "chtag", action: "list"}) as any;
-
-            // expect(result.stdout).toMatch("t IBM-1047");
-
-            // result = await ZosmfRestClient.putExpectJSON(REAL_SESSION,
-            //     ZosFilesConstants.RESOURCE + ZosFilesConstants.RES_USS_FILES + "/" + ussname + "/" + "bar.binary",
-            //     [Headers.APPLICATION_JSON],
-            //     { request: "chtag", action: "list"}) as any;
-
-            // expect(result.stdout).toMatch("b binary");
-        });
+            return response.stdout[0];
+        }
     });
 });
