@@ -491,25 +491,7 @@ export class Upload {
             const files = ZosFilesUtils.getFileListFromPath(inputDirectory, false);
 
             await Promise.all(files.map(async (fileName) => {
-                const filePath = path.normalize(path.join(inputDirectory, fileName));
-                if(!IO.isDir(filePath)) {
-                    const ussFilePath = path.posix.join(ussname, fileName);
-                    let tempBinary;
-                    if(attributes) {
-                        await this.uploadFileAndTagBasedOnAttributes(filePath,ussFilePath,session,attributes);
-                    } else {
-                        if (filesMap) {
-                            if(filesMap.fileNames.indexOf(fileName) > -1) {
-                                tempBinary = filesMap.binary;
-                            } else {
-                                tempBinary = binary;
-                            }
-                        } else {
-                            tempBinary = binary;
-                        }
-                        await this.fileToUSSFile(session, filePath, ussFilePath, tempBinary);
-                    }
-                }
+                await Upload.uploadFile(inputDirectory, fileName, ussname, attributes, session, filesMap, binary);
             }));
 
         } else {
@@ -527,6 +509,7 @@ export class Upload {
             apiResponse: result
         };
     }
+
 
     /**
      * Check if USS directory exists
@@ -550,15 +533,41 @@ export class Upload {
         return false;
     }
 
+    private static async uploadFile(inputDirectory: string, fileName: string, ussname: string,
+                                    attributes: ZosFilesAttributes, session: AbstractSession, filesMap: IUploadMap, binary: boolean) {
+        const filePath = path.normalize(path.join(inputDirectory, fileName));
+        if (!IO.isDir(filePath)) {
+            const ussFilePath = path.posix.join(ussname, fileName);
+            let tempBinary;
+            if (attributes) {
+                await this.uploadFileAndTagBasedOnAttributes(filePath, ussFilePath, session, attributes);
+            }
+            else {
+                if (filesMap) {
+                    if (filesMap.fileNames.indexOf(fileName) > -1) {
+                        tempBinary = filesMap.binary;
+                    }
+                    else {
+                        tempBinary = binary;
+                    }
+                }
+                else {
+                    tempBinary = binary;
+                }
+                await this.fileToUSSFile(session, filePath, ussFilePath, tempBinary);
+            }
+        }
+    }
+
     private static async uploadFileAndTagBasedOnAttributes(localPath: string,
                                                            ussPath: string,
                                                            session: AbstractSession,
                                                            attributes: ZosFilesAttributes) {
-        if (attributes.fileShouldBeUploaded(localPath)) {
-            const binary = attributes.getFileTransferMode(localPath) === TransferMode.BINARY;
-            await this.fileToUSSFile(session, localPath, ussPath, binary);
-            const tag = attributes.getRemoteEncoding(localPath);
-            if (tag === Tag.BINARY.valueOf() ) {
+            if (attributes.fileShouldBeUploaded(localPath)) {
+                const binary = attributes.getFileTransferMode(localPath) === TransferMode.BINARY;
+                await this.fileToUSSFile(session, localPath, ussPath, binary);
+                const tag = attributes.getRemoteEncoding(localPath);
+                if (tag === Tag.BINARY.valueOf() ) {
                 await Utilities.chtag(session,ussPath,Tag.BINARY);
             } else {
                 await Utilities.chtag(session,ussPath,Tag.TEXT,tag);
