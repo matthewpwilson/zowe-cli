@@ -62,7 +62,7 @@ describe("USS utiliites", () => {
         });
 
         it("should make a REST request to set the tag with a codeset", async () => {
-            await testChtagExpectPayload({type: Tag.TEXT, codeset: "ISO8859-1"}, 
+            await testChtagExpectPayload({type: Tag.TEXT, codeset: "ISO8859-1"},
                                          {request: "chtag", action: "set", type: "text", codeset: "ISO8859-1"});
         });
 
@@ -77,8 +77,10 @@ describe("USS utiliites", () => {
             response = await Utilities.chtag(dummySession,"/testfile",args.type,args.codeset);
 
             expect(response.success).toBeTruthy();
-            const expectedUrl = ZosFilesConstants.RESOURCE + ZosFilesConstants.FS + "/testfile";
-            expect(restClientSpy).toHaveBeenCalledWith(dummySession, expectedUrl,[Headers.APPLICATION_JSON],expectedPayload);
+            const expectedUrl = ZosFilesConstants.RESOURCE + ZosFilesConstants.RES_USS_FILES + "/testfile";
+            expect(restClientSpy).toHaveBeenCalledWith(dummySession, expectedUrl,
+                [Headers.APPLICATION_JSON, { [Headers.CONTENT_LENGTH] : JSON.stringify(expectedPayload).length.toString() }],
+                expectedPayload);
         }
     });
 });

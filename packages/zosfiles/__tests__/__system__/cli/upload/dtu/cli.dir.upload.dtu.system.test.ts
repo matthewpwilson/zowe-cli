@@ -317,14 +317,17 @@ describe("Upload directory to USS", () => {
 
             const request: object = {request:"chtag",
                                      action: "list"};
+            const url = ZosFilesConstants.RESOURCE + ZosFilesConstants.RES_USS_FILES
+                        + "/" + ussname + "/" + "baz.asciitext";
+            Imperative.console.info("z/OSMF URL: "  + url);
             const result = await ZosmfRestClient.putExpectJSON<any>(REAL_SESSION,
-                                           ZosFilesConstants.RESOURCE + "/" + ZosFilesConstants.RES_USS_FILES + "/" + ussname + "/" + "baz.asciitext",
-                                           [Headers.APPLICATION_JSON],
+                                           url,
+                                           [Headers.APPLICATION_JSON, { [Headers.CONTENT_LENGTH] : JSON.stringify(request).length.toString() }],
                                            request);
             expect(result.stdout).toMatch("t ISO8859-1");
 
             // result = await ZosmfRestClient.putExpectJSON(REAL_SESSION,
-            //     ZosFilesConstants.RESOURCE + "/" + ZosFilesConstants.RES_USS_FILES + "/" + ussname + "/" + "foo.text",
+            //     ZosFilesConstants.RESOURCE + ZosFilesConstants.RES_USS_FILES + "/" + ussname + "/" + "foo.text",
             //     [Headers.APPLICATION_JSON],
             //     { request: "chtag", action: "list"}) as any;
 

@@ -24,13 +24,16 @@ export class Utilities {
             ImperativeExpect.toBeEqual(codeset,undefined,"A codeset cannot be specified for a binary file.");
         }
 
-        const url = ZosFilesConstants.RESOURCE + ZosFilesConstants.FS + "/testfile";
+        const url = ZosFilesConstants.RESOURCE + ZosFilesConstants.RES_USS_FILES + ussFileName;
         const payload = { request: "chtag", action: "set", type: type.valueOf()} as any;
         if (codeset) {
             payload.codeset = codeset;
         }
 
-        await ZosmfRestClient.putExpectJSON(session,url,[Headers.APPLICATION_JSON],payload);
+        await ZosmfRestClient.putExpectJSON(session,
+            url,
+            [Headers.APPLICATION_JSON, { [Headers.CONTENT_LENGTH] : JSON.stringify(payload).length.toString() }],
+            payload);
 
         return {
             success: true,
