@@ -491,11 +491,13 @@ export class Upload {
             const files = ZosFilesUtils.getFileListFromPath(inputDirectory, false);
 
             await Promise.all(files.map(async (fileName) => {
-                await Upload.uploadFile(inputDirectory, fileName, ussname, attributes, session, filesMap, binary);
+                if (!IO.isDir(fileName)) {
+                    await Upload.uploadFile(inputDirectory, fileName, ussname, attributes, session, filesMap, binary);
+                }
             }));
 
         } else {
-            await this.dirToUSSDirRecursive(session, inputDirectory, ussname, binary, filesMap);
+            await this.dirToUSSDirRecursive(session, inputDirectory, ussname, binary, filesMap, attributes);
         }
 
         const result: IUploadResult = {
@@ -536,26 +538,25 @@ export class Upload {
     private static async uploadFile(inputDirectory: string, fileName: string, ussname: string,
                                     attributes: ZosFilesAttributes, session: AbstractSession, filesMap: IUploadMap, binary: boolean) {
         const filePath = path.normalize(path.join(inputDirectory, fileName));
-        if (!IO.isDir(filePath)) {
-            const ussFilePath = path.posix.join(ussname, fileName);
-            let tempBinary;
-            if (attributes) {
-                await this.uploadFileAndTagBasedOnAttributes(filePath, ussFilePath, session, attributes);
-            }
-            else {
-                if (filesMap) {
-                    if (filesMap.fileNames.indexOf(fileName) > -1) {
-                        tempBinary = filesMap.binary;
-                    }
-                    else {
-                        tempBinary = binary;
-                    }
+        const ussFilePath = path.posix.join(ussname, fileName);
+        let tempBinary;
+
+        if (attributes) {
+            await this.uploadFileAndTagBasedOnAttributes(filePath, ussFilePath, session, attributes);
+        }
+        else {
+            if (filesMap) {
+                if (filesMap.fileNames.indexOf(fileName) > -1) {
+                    tempBinary = filesMap.binary;
                 }
                 else {
                     tempBinary = binary;
                 }
-                await this.fileToUSSFile(session, filePath, ussFilePath, tempBinary);
             }
+            else {
+                tempBinary = binary;
+            }
+            await this.fileToUSSFile(session, filePath, ussFilePath, tempBinary);
         }
     }
 
@@ -588,22 +589,12 @@ export class Upload {
                                               inputDirectory: string,
                                               ussname: string,
                                               binary: boolean,
-                                              filesMap?: IUploadMap) {
+                                              filesMap?: IUploadMap,
+                                              attributes?: ZosFilesAttributes) {
         await Promise.all(fs.readdirSync(inputDirectory).map(async (fileName) => {
             const filePath = path.normalize(path.join(inputDirectory, fileName));
             if(!IO.isDir(filePath)) {
-                let tempBinary;
-                if(filesMap) {
-                    if(filesMap.fileNames.indexOf(fileName) > -1) {
-                        tempBinary = filesMap.binary;
-                    } else {
-                        tempBinary = binary;
-                    }
-                } else {
-                    tempBinary = binary;
-                }
-                const ussFilePath = path.posix.join(ussname, fileName);
-                await this.fileToUSSFile(session, filePath, ussFilePath, tempBinary);
+                await Upload.uploadFile(inputDirectory, fileName, ussname, attributes, session, filesMap, binary);
             } else {
                 const tempUssPath = path.posix.join(ussname, fileName);
                 // Check if provided unix directory exists
