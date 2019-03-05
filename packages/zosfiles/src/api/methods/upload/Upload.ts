@@ -607,7 +607,7 @@ export class Upload {
                     if(!directoryExists) {
                         await Create.uss(session, tempUssPath, "directory");
                     }
-                    await this.dirToUSSDirRecursive(session, filePath, tempUssPath, binary, filesMap);
+                    await this.dirToUSSDirRecursive(session, filePath, tempUssPath, binary, filesMap,attributes);
                 } else {
                     this.log.debug("Ignoring directory " + filePath);
                 }

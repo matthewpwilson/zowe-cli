@@ -1007,8 +1007,30 @@ describe("z/OS Files - Upload", () => {
                 expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession,
                     `${path.normalize(`${testPath}/uploaddir/uploadedfile`)}`,
                     `${dsName}/uploaddir/uploadedfile`,
-                     false);
+                     true);
             });
+            it("should apply attributes in nested directories", async () => {
+                isDirSpy.mockImplementation((dirPath: string) => {
+                    return (dirPath.endsWith("dir"));
+                });
+                getFileListWithFsSpy.mockImplementation((dirPath: string) => {
+                    if (dirPath.endsWith("seconddir")) {
+                        return ["foo.binary"];
+                    } else if (dirPath.endsWith("firstdir")) {
+                        return ["seconddir"];
+                    } else {
+                        return ["firstdir"];
+                    }
+                });
+
+                USSresponse = await Upload.dirToUSSDir(dummySession, testPath, dsName,false,true,undefined,attributesMock);
+
+                expect(USSresponse).toBeDefined();
+                expect(USSresponse.success).toBeTruthy();
+                expect(chtagSpy).toHaveBeenCalledTimes(1);
+                expect(chtagSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${dsName}/firstdir/seconddir/foo.binary`)}`, Tag.BINARY);
+            });
+
 
             it("should upload files in text or binary according to attributes", async () => {
                 getFileListFromPathSpy.mockReturnValue(["textfile", "binaryfile"]);
