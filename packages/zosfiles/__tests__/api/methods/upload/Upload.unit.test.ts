@@ -967,6 +967,45 @@ describe("z/OS Files - Upload", () => {
                 expect(fileToUSSFileSpy).toHaveBeenCalledTimes(1);
                 expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/uploadme`)}`, `${dsName}/uploadme`, true);
             });
+
+            it("should not upload ignored directories", async () => {
+                // This test simulates trying to upload the following structure:
+                //   uploaddir
+                //      uploadedfile
+                //   ignoredir
+                //      ignoredfile
+
+                isDirSpy.mockImplementation((dirPath: string) => {
+                    return (dirPath.endsWith("dir"));
+                });
+                getFileListWithFsSpy.mockImplementation((dirPath: string) => {
+                    if (dirPath.endsWith("uploaddir")) {
+                        return ["uploadedfile"];
+                    } else if (dirPath.endsWith("ignoredir")) {
+                        return ["ignoredfile"];
+                    } else {
+                        return ["uploaddir", "ignoredir"];
+                    }
+                });
+                attributesMock.fileShouldBeUploaded = jest.fn((ignorePath: string) => {
+                    if (ignorePath.endsWith("ignoredir")) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                });
+
+                USSresponse = await Upload.dirToUSSDir(dummySession, testPath, dsName,false,true,undefined,attributesMock);
+
+                expect(USSresponse).toBeDefined();
+                expect(USSresponse.success).toBeTruthy();
+                expect(fileToUSSFileSpy).toHaveBeenCalledTimes(1);
+                expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession,
+                    `${path.normalize(`${testPath}/uploaddir/uploadedfile`)}`,
+                    `${dsName}/uploaddir/uploadedfile`,
+                     false);
+            });
+
             it("should upload files in text or binary according to attributes", async () => {
                 getFileListFromPathSpy.mockReturnValue(["textfile", "binaryfile"]);
                 attributesMock.fileShouldBeUploaded = jest.fn(() => true);
@@ -1008,8 +1047,6 @@ describe("z/OS Files - Upload", () => {
                 expect(chtagSpy).toHaveBeenCalledTimes(1);
                 expect(chtagSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${dsName}/asciifile`)}`, Tag.TEXT, "ISO8859-1");
             });
-
-            test.skip("honours .zosattributes for recursive upload");
         });
     });
 });

@@ -491,7 +491,8 @@ export class Upload {
             const files = ZosFilesUtils.getFileListFromPath(inputDirectory, false);
 
             await Promise.all(files.map(async (fileName) => {
-                if (!IO.isDir(fileName)) {
+                const filePath = path.normalize(path.join(inputDirectory, fileName));
+                if (!IO.isDir(filePath)) {
                     await Upload.uploadFile(inputDirectory, fileName, ussname, attributes, session, filesMap, binary);
                 }
             }));
@@ -593,16 +594,22 @@ export class Upload {
                                               attributes?: ZosFilesAttributes) {
         await Promise.all(fs.readdirSync(inputDirectory).map(async (fileName) => {
             const filePath = path.normalize(path.join(inputDirectory, fileName));
+            this.log.debug("Processing path " + filePath);
             if(!IO.isDir(filePath)) {
+                this.log.debug("Uploading file " + filePath);
                 await Upload.uploadFile(inputDirectory, fileName, ussname, attributes, session, filesMap, binary);
             } else {
-                const tempUssPath = path.posix.join(ussname, fileName);
-                // Check if provided unix directory exists
-                const isDirectoryExist = await this.isDirectoryExist(session, tempUssPath);
-                if(!isDirectoryExist) {
-                    await Create.uss(session, tempUssPath, "directory");
+                if (attributes === undefined || attributes.fileShouldBeUploaded(filePath)) {
+                    this.log.debug("Uploading directory " + filePath);
+                    const tempUssPath = path.posix.join(ussname, fileName);
+                    const directoryExists = await this.isDirectoryExist(session, tempUssPath);
+                    if(!directoryExists) {
+                        await Create.uss(session, tempUssPath, "directory");
+                    }
+                    await this.dirToUSSDirRecursive(session, filePath, tempUssPath, binary, filesMap);
+                } else {
+                    this.log.debug("Ignoring directory " + filePath);
                 }
-                await this.dirToUSSDirRecursive(session, filePath, tempUssPath, binary, filesMap);
             }
         }));
     }
