@@ -964,6 +964,9 @@ describe("z/OS Files - Upload", () => {
                 expect(USSresponse).toBeDefined();
                 expect(USSresponse.success).toBeTruthy();
                 expect(attributesMock.fileShouldBeUploaded).toHaveBeenCalledTimes(2);
+                expect(attributesMock.fileShouldBeUploaded).toHaveBeenCalledWith("uploadme");
+                expect(attributesMock.fileShouldBeUploaded).toHaveBeenCalledWith("ignoreme");
+
                 expect(fileToUSSFileSpy).toHaveBeenCalledTimes(1);
                 expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${testPath}/uploadme`)}`, `${dsName}/uploadme`, true);
             });
@@ -999,6 +1002,7 @@ describe("z/OS Files - Upload", () => {
 
                 expect(USSresponse).toBeDefined();
                 expect(USSresponse.success).toBeTruthy();
+                expect(attributesMock.fileShouldBeUploaded).toHaveBeenCalledWith("uploaddir");
                 expect(fileToUSSFileSpy).toHaveBeenCalledTimes(1);
                 expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession,
                     `${path.normalize(`${testPath}/uploaddir/uploadedfile`)}`,

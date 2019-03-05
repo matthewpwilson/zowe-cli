@@ -53,6 +53,12 @@ describe("ZosFilesAttributes", () => {
             expect(testable.fileShouldBeUploaded("/a/nestted/path/to/foo.stuff")).toBeFalsy();
         });
 
+        it("ignores a nested directory", () => {
+            const attributesFileContents = "foo/bar/baz -";
+            const testable = new ZosFilesAttributes(attributesFileContents);
+            expect(testable.fileShouldBeUploaded("foo/bar/baz")).toBeFalsy();
+        });
+
         it("ignores files matched files when there are multiple patterns", () => {
             const attributesFileContents = "*.stuff -\n*.bin -";
             const testable = new ZosFilesAttributes(attributesFileContents);

@@ -543,7 +543,7 @@ export class Upload {
         let tempBinary;
 
         if (attributes) {
-            await this.uploadFileAndTagBasedOnAttributes(filePath, ussFilePath, session, attributes);
+            await this.uploadFileAndTagBasedOnAttributes(fileName, filePath, ussFilePath, session, attributes);
         }
         else {
             if (filesMap) {
@@ -561,15 +561,16 @@ export class Upload {
         }
     }
 
-    private static async uploadFileAndTagBasedOnAttributes(localPath: string,
+    private static async uploadFileAndTagBasedOnAttributes(relativeLocalPath: string,
+                                                           fullLocalPath: string,
                                                            ussPath: string,
                                                            session: AbstractSession,
                                                            attributes: ZosFilesAttributes) {
-            if (attributes.fileShouldBeUploaded(localPath)) {
-                const binary = attributes.getFileTransferMode(localPath) === TransferMode.BINARY;
-                await this.fileToUSSFile(session, localPath, ussPath, binary);
-                const tag = attributes.getRemoteEncoding(localPath);
-                if (tag === Tag.BINARY.valueOf() ) {
+        if (attributes.fileShouldBeUploaded(relativeLocalPath)) {
+            const binary = attributes.getFileTransferMode(relativeLocalPath) === TransferMode.BINARY;
+            await this.fileToUSSFile(session, fullLocalPath, ussPath, binary);
+            const tag = attributes.getRemoteEncoding(relativeLocalPath);
+            if (tag === Tag.BINARY.valueOf() ) {
                 await Utilities.chtag(session,ussPath,Tag.BINARY);
             } else {
                 await Utilities.chtag(session,ussPath,Tag.TEXT,tag);
@@ -599,7 +600,7 @@ export class Upload {
                 this.log.debug("Uploading file " + filePath);
                 await Upload.uploadFile(inputDirectory, fileName, ussname, attributes, session, filesMap, binary);
             } else {
-                if (attributes === undefined || attributes.fileShouldBeUploaded(filePath)) {
+                if (attributes === undefined || attributes.fileShouldBeUploaded(fileName)) {
                     this.log.debug("Uploading directory " + filePath);
                     const tempUssPath = path.posix.join(ussname, fileName);
                     const directoryExists = await this.isDirectoryExist(session, tempUssPath);
