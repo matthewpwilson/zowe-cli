@@ -1009,7 +1009,7 @@ describe("z/OS Files - Upload", () => {
                     `${dsName}/uploaddir/uploadedfile`,
                      true);
             });
-            it("should apply attributes in nested directories", async () => {
+            it("should ask for attributes with path relative to base dir", async () => {
                 isDirSpy.mockImplementation((dirPath: string) => {
                     return (dirPath.endsWith("dir"));
                 });
@@ -1027,8 +1027,7 @@ describe("z/OS Files - Upload", () => {
 
                 expect(USSresponse).toBeDefined();
                 expect(USSresponse.success).toBeTruthy();
-                expect(chtagSpy).toHaveBeenCalledTimes(1);
-                expect(chtagSpy).toHaveBeenCalledWith(dummySession, `${path.normalize(`${dsName}/firstdir/seconddir/foo.binary`)}`, Tag.BINARY);
+                expect(attributesMock.getRemoteEncoding).toHaveBeenCalledWith("firstdir/seconddir/foo.binary");
             });
 
 

@@ -266,16 +266,43 @@ describe("Upload directory to USS", () => {
             const stdoutText = response.stdout.toString();
             expect(stdoutText).toContain("Directory uploaded successfully.");
 
-
             try {
                 await Get.USSFile(REAL_SESSION, path.join(ussname,"foo.ignoreme"));
                 fail("USS file foo.stuff should not have been transferred");
             } catch (err) {
                 expect(err).toBeDefined();
             }
-
-
         });
+
+        it("should ignore nested directories as specified", async () => {
+            const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_ignored_dir");
+            const shellScript = path.join(__dirname, "__scripts__", "command", "command_upload_dtu.sh");
+
+            const response = runCliScript(shellScript, TEST_ENVIRONMENT,
+                [
+                    localDirName,
+                    ussname,
+                    "-r"
+                ]);
+
+            expect(response.stderr.toString()).toBe("");
+            expect(response.status).toBe(0);
+            const stdoutText = response.stdout.toString();
+            expect(stdoutText).toContain("Directory uploaded successfully.");
+
+            let error: Error;
+            try {
+                await Get.USSFile(REAL_SESSION, path.join(ussname,"uploaded_dir/ignored_dir/ignored_file"));
+                fail("USS file ignored_file should not have been transferred");
+            } catch (err) {
+                error = err;
+            }
+            expect(error).toBeDefined();
+
+            const ussResponse = await Get.USSFile(REAL_SESSION, path.join(ussname,"uploaded_dir/uploaded_file"));
+            expect(ussResponse).toBeInstanceOf(Buffer);
+        });
+
         it("should upload files in binary or text as indicated", async () => {
             const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_mixed_files");
             const shellScript = path.join(__dirname, "__scripts__", "command", "command_upload_dtu.sh");

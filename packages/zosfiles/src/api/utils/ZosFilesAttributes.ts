@@ -11,6 +11,7 @@
 
 
 import * as minimatch from "minimatch";
+import { Logger } from "@brightside/imperative";
 
 export enum TransferMode {BINARY, TEXT}
 
@@ -35,12 +36,17 @@ export class ZosFilesAttributes {
     }
 
     public fileShouldBeUploaded(path: string): boolean {
+        let result = false;
         const attributes = this.findLastMatchingAttributes(path);
+
         if (attributes === null) {
-            return true;
+            result = true;
+        } else {
+            result = !attributes.ignore;
         }
 
-        return !attributes.ignore;
+        Logger.getAppLogger().debug("path: " + path + " : " + attributes + " result = " + result);
+        return result;
     }
 
     public getFileTransferMode(path: string): TransferMode {

@@ -498,7 +498,7 @@ export class Upload {
             }));
 
         } else {
-            await this.dirToUSSDirRecursive(session, inputDirectory, ussname, binary, filesMap, attributes);
+            await this.dirToUSSDirRecursive(session, inputDirectory, "", ussname, binary, filesMap, attributes);
         }
 
         const result: IUploadResult = {
@@ -536,18 +536,18 @@ export class Upload {
         return false;
     }
 
-    private static async uploadFile(inputDirectory: string, fileName: string, ussname: string,
+    private static async uploadFile(baseDirectory: string, relativePath: string, ussname: string,
                                     attributes: ZosFilesAttributes, session: AbstractSession, filesMap: IUploadMap, binary: boolean) {
-        const filePath = path.normalize(path.join(inputDirectory, fileName));
-        const ussFilePath = path.posix.join(ussname, fileName);
+        const absoluteLocalPath = path.normalize(path.join(baseDirectory, relativePath));
+        const ussFilePath = path.posix.join(ussname, path.basename(relativePath));
         let tempBinary;
 
         if (attributes) {
-            await this.uploadFileAndTagBasedOnAttributes(fileName, filePath, ussFilePath, session, attributes);
+            await this.uploadFileAndTagBasedOnAttributes(relativePath, absoluteLocalPath, ussFilePath, session, attributes);
         }
         else {
             if (filesMap) {
-                if (filesMap.fileNames.indexOf(fileName) > -1) {
+                if (filesMap.fileNames.indexOf(path.basename(relativePath)) > -1) {
                     tempBinary = filesMap.binary;
                 }
                 else {
@@ -557,7 +557,7 @@ export class Upload {
             else {
                 tempBinary = binary;
             }
-            await this.fileToUSSFile(session, filePath, ussFilePath, tempBinary);
+            await this.fileToUSSFile(session, absoluteLocalPath, ussFilePath, tempBinary);
         }
     }
 
@@ -581,35 +581,40 @@ export class Upload {
     /**
      * Upload directory to USS recursively
      * @param {AbstractSession} session - z/OS connection info
-     * @param {string} inputDirectory   - the path of local directory
+     * @param {string} inputDirectory   - absolute path of base directory to upload
+     * @param {string} currentRelativeDirectory - path of the directory to upload, relative to inputDir
      * @param {string} ussname          - the name of uss folder
      * @param {boolean} binary          - the indicator to upload the file in binary mode
      * @param {IUploadMap} filesMap     - the map to define which files to upload in binary or asci mode
+     * @param {ZosFilesAttributes} attributes - object describing upload attributes (alternative to filesMap)
      * @return {null}
      */
     private static async dirToUSSDirRecursive(session: AbstractSession,
                                               inputDirectory: string,
+                                              currentRelativeDirectory: string,
                                               ussname: string,
                                               binary: boolean,
                                               filesMap?: IUploadMap,
                                               attributes?: ZosFilesAttributes) {
-        await Promise.all(fs.readdirSync(inputDirectory).map(async (fileName) => {
-            const filePath = path.normalize(path.join(inputDirectory, fileName));
-            this.log.debug("Processing path " + filePath);
-            if(!IO.isDir(filePath)) {
-                this.log.debug("Uploading file " + filePath);
-                await Upload.uploadFile(inputDirectory, fileName, ussname, attributes, session, filesMap, binary);
+        const absolutePath = path.normalize(path.join(inputDirectory,currentRelativeDirectory));
+        await Promise.all(fs.readdirSync(absolutePath).map(async (fileName) => {
+            const memberRelativePath = path.normalize(path.join(currentRelativeDirectory, fileName));
+            const memberAbsolutePath = path.normalize(path.join(inputDirectory,memberRelativePath));
+            this.log.debug("Processing path " + memberAbsolutePath);
+            if(!IO.isDir(memberAbsolutePath)) {
+                this.log.debug("Uploading file " + memberAbsolutePath);
+                await Upload.uploadFile(inputDirectory, memberRelativePath, ussname, attributes, session, filesMap, binary);
             } else {
-                if (attributes === undefined || attributes.fileShouldBeUploaded(fileName)) {
-                    this.log.debug("Uploading directory " + filePath);
+                if (attributes === undefined || attributes.fileShouldBeUploaded(memberRelativePath)) {
+                    this.log.debug("Uploading directory " + memberAbsolutePath);
                     const tempUssPath = path.posix.join(ussname, fileName);
                     const directoryExists = await this.isDirectoryExist(session, tempUssPath);
                     if(!directoryExists) {
                         await Create.uss(session, tempUssPath, "directory");
                     }
-                    await this.dirToUSSDirRecursive(session, filePath, tempUssPath, binary, filesMap,attributes);
+                    await this.dirToUSSDirRecursive(session, inputDirectory, memberRelativePath, tempUssPath, binary, filesMap,attributes);
                 } else {
-                    this.log.debug("Ignoring directory " + filePath);
+                    this.log.debug("Ignoring directory " + memberAbsolutePath);
                 }
             }
         }));
