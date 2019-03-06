@@ -15,6 +15,7 @@ import { ZosFilesAttributes } from "../../../..";
 import * as fs from "fs";
 
 describe("Upload dir-to-uss handler", () => {
+
     describe("process method", () => {
         let fakeSession: any = null;
         const inputDir = "/somedir/test_dir";
@@ -119,7 +120,7 @@ describe("Upload dir-to-uss handler", () => {
         it("should pass attributes when a .zosattributes file is present", async () => {
             jest.spyOn(fs,"existsSync").mockReturnValue(true);
             const attributesContents = "foo.stuff -";
-            const fsReadFileSync = jest.spyOn(fs,"readFileSync").mockReturnValue(Buffer.from(attributesContents));
+            const fsReadFileSync = jest.spyOn(fs,"readFileSync").mockReturnValueOnce(Buffer.from(attributesContents));
 
             try {
                 // Invoke the handler with a full set of mocked arguments and response functions
@@ -174,6 +175,55 @@ describe("Upload dir-to-uss handler", () => {
             expect(jsonObj).toMatchSnapshot();
             expect(apiMessage).toMatchSnapshot();
             expect(logMessage).toMatchSnapshot();
+        });
+
+        it("should give an error if --attributes specifies a non-existent file", async () => {
+            jest.spyOn(fs,"existsSync").mockReturnValue(false);
+
+            try {
+                // Invoke the handler with a full set of mocked arguments and response functions
+                await handler.process({
+                    arguments: {
+                        $0: "fake",
+                        _: ["fake"],
+                        inputDir,
+                        USSDir,
+                        attributes: "non-existent-file",
+                        ...UNIT_TEST_ZOSMF_PROF_OPTS
+                    },
+                    response: {
+                        data: {
+                            setMessage: jest.fn((setMsgArgs) => {
+                                apiMessage = setMsgArgs;
+                            }),
+                            setObj: jest.fn((setObjArgs) => {
+                                jsonObj = setObjArgs;
+                            })
+                        },
+                        console: {
+                            log: jest.fn((logArgs) => {
+                                logMessage += "\n" + logArgs;
+                            })
+                        },
+                        progress: {
+                            startBar: jest.fn((parms) => {
+                                // do nothing
+                            }),
+                            endBar: jest.fn(() => {
+                                // do nothing
+                            })
+                        }
+                    },
+                    profiles: {
+                        get: profFunc
+                    }
+                } as any);
+            } catch (e) {
+                error = e;
+            }
+
+            expect(error).toBeDefined();
+            expect(error.message).toBe("Attributes file non-existent-file does not exist");
         });
     });
 });

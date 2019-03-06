@@ -322,6 +322,22 @@ describe("Upload directory to USS", () => {
                                            request);
             return response.stdout[0];
         }
+
+        it.only("should accept zosattributes path as an argument", async () => {
+            const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/command_upload_dtu_subdir_ascii");
+
+            const attributesPath = path.join(__dirname, "__data__", "command_upload_dtu_dir/external.attributes");
+            testSuccessfulUpload(localDirName, ["--attributes",attributesPath]);
+
+            let error: Error;
+            try {
+                await Get.USSFile(REAL_SESSION, path.join(ussname,"subdir_ascii_file1.txt"));
+                fail("USS file subddir_ascii_file1.txt should not have been transferred");
+            } catch (err) {
+                error = err;
+            }
+            expect(error).toBeDefined();
+        });
     });
 });
 

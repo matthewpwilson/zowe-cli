@@ -35,6 +35,12 @@ export default class DirToUSSDirHandler extends ZosFilesBaseHandler {
             inputDir = path.resolve(commandParameters.arguments.inputDir);
         }
 
+        if (commandParameters.arguments.attributes) {
+            if (!fs.existsSync(commandParameters.arguments.attributes)) {
+                throw new ImperativeError({msg: "Attributes file " + commandParameters.arguments.attributes + " does not exist"});
+            }
+        }
+
         const attributesFile = path.join(inputDir,".zosattributes");
         let response;
         if (fs.existsSync(attributesFile)) {
