@@ -76,6 +76,9 @@ export class ZosFilesAttributes {
         let lineNumber = 0;
         lines.forEach((line) => {
             lineNumber++;
+            if (line.trim() === "") {
+                return;
+            }
             const parts = line.trim().split(/\s+/);
             const pattern = parts[0];
             const localEncoding = parts[1];

@@ -9,7 +9,7 @@
 *
 */
 
-import { AbstractSession, IHandlerParameters, TextUtils } from "@brightside/imperative";
+import { AbstractSession, IHandlerParameters, TextUtils, ImperativeError } from "@brightside/imperative";
 import { Upload } from "../../../api/methods/upload";
 import { IZosFilesResponse, ZosFilesAttributes } from "../../../api";
 import { ZosFilesBaseHandler } from "../../ZosFilesBase.handler";
@@ -39,7 +39,12 @@ export default class DirToUSSDirHandler extends ZosFilesBaseHandler {
         let response;
         if (fs.existsSync(attributesFile)) {
             const attributesFileContents = fs.readFileSync(attributesFile).toString();
-            const attributes = new ZosFilesAttributes(attributesFileContents);
+            let attributes;
+            try {
+                attributes  = new ZosFilesAttributes(attributesFileContents);
+            } catch (err) {
+                throw new ImperativeError({msg: "Error parsing "+ attributesFile + ": " + err.message});
+            }
             response = await Upload.dirToUSSDir(session, inputDir, commandParameters.arguments.USSDir,
                 commandParameters.arguments.binary, commandParameters.arguments.recursive, undefined, attributes);
         } else {

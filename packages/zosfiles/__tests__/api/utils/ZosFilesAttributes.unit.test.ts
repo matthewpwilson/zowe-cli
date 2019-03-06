@@ -137,6 +137,11 @@ describe("ZosFilesAttributes", () => {
             expect(testable.getRemoteEncoding("foo.stuff")).toBe("ISO8859-1");
         });
 
+        it("should ignore blanks lines", () => {
+            const testable = new ZosFilesAttributes("foo.stuff ISO8859-1 ISO8859-1\n\n");
+            expect(testable.getRemoteEncoding("foo.stuff")).toBe("ISO8859-1");
+        });
+
         it("should complain if there are more than 3 fields per line", () => {
             let error: Error;
             try {
