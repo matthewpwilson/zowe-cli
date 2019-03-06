@@ -253,18 +253,7 @@ describe("Upload directory to USS", () => {
     describe ("Scenarios using the .zosattributes file", () => {
         it("should ignore files marked with a -", async () => {
             const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_ignored_files");
-            const shellScript = path.join(__dirname, "__scripts__", "command", "command_upload_dtu.sh");
-
-            const response = runCliScript(shellScript, TEST_ENVIRONMENT,
-                [
-                    localDirName,
-                    ussname
-                ]);
-
-            expect(response.stderr.toString()).toBe("");
-            expect(response.status).toBe(0);
-            const stdoutText = response.stdout.toString();
-            expect(stdoutText).toContain("Directory uploaded successfully.");
+            testSuccessfulUpload(localDirName);
 
             try {
                 await Get.USSFile(REAL_SESSION, path.join(ussname,"foo.ignoreme"));
@@ -276,19 +265,8 @@ describe("Upload directory to USS", () => {
 
         it("should ignore nested directories as specified", async () => {
             const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_ignored_dir");
-            const shellScript = path.join(__dirname, "__scripts__", "command", "command_upload_dtu.sh");
 
-            const response = runCliScript(shellScript, TEST_ENVIRONMENT,
-                [
-                    localDirName,
-                    ussname,
-                    "-r"
-                ]);
-
-            expect(response.stderr.toString()).toBe("");
-            expect(response.status).toBe(0);
-            const stdoutText = response.stdout.toString();
-            expect(stdoutText).toContain("Directory uploaded successfully.");
+            testSuccessfulUpload(localDirName, ["--recursive"]);
 
             let error: Error;
             try {
@@ -305,18 +283,8 @@ describe("Upload directory to USS", () => {
 
         it("should upload files in binary or text as indicated", async () => {
             const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_mixed_files");
-            const shellScript = path.join(__dirname, "__scripts__", "command", "command_upload_dtu.sh");
 
-            const response = runCliScript(shellScript, TEST_ENVIRONMENT,
-                [
-                    localDirName,
-                    ussname
-                ]);
-
-            expect(response.stderr.toString()).toBe("");
-            expect(response.status).toBe(0);
-            const stdoutText = response.stdout.toString();
-            expect(stdoutText).toContain("Directory uploaded successfully.");
+            testSuccessfulUpload(localDirName);
 
             const remoteTextFileBuffer = await Get.USSFile(REAL_SESSION, path.join(ussname,"foo.text"));
             const localTextFileBuffer = fs.readFileSync(path.join(localDirName,"foo.text"));
@@ -329,19 +297,8 @@ describe("Upload directory to USS", () => {
 
         it("should tag uploaded files according to remote encoding", async () => {
             const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_mixed_files");
-            const shellScript = path.join(__dirname, "__scripts__", "command", "command_upload_dtu.sh");
 
-            const response = runCliScript(shellScript, TEST_ENVIRONMENT,
-                [
-                    localDirName,
-                    ussname
-                ]);
-
-            expect(response.stderr.toString()).toBe("");
-            expect(response.status).toBe(0);
-            const stdoutText = response.stdout.toString();
-            expect(stdoutText).toContain("Directory uploaded successfully.");
-
+            testSuccessfulUpload(localDirName);
 
             let tag = await getTag(ussname + "/baz.asciitext");
             expect(tag).toMatch("t ISO8859-1");
@@ -367,3 +324,21 @@ describe("Upload directory to USS", () => {
         }
     });
 });
+
+function testSuccessfulUpload(localDirName: string, additionalParameters?: string[]) {
+    const shellScript = path.join(__dirname, "__scripts__", "command", "command_upload_dtu.sh");
+    let parms: string[] = [
+        localDirName,
+        ussname
+    ];
+    if (additionalParameters) {
+        parms = parms.concat(additionalParameters);
+    }
+
+    const response = runCliScript(shellScript, TEST_ENVIRONMENT, parms);
+    expect(response.stderr.toString()).toBe("");
+    expect(response.status).toBe(0);
+    const stdoutText = response.stdout.toString();
+    expect(stdoutText).toContain("Directory uploaded successfully.");
+}
+
