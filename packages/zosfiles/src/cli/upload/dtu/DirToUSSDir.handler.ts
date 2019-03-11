@@ -35,24 +35,12 @@ export default class DirToUSSDirHandler extends ZosFilesBaseHandler {
             inputDir = path.resolve(commandParameters.arguments.inputDir);
         }
 
-        if (commandParameters.arguments.attributes) {
-            if (!fs.existsSync(commandParameters.arguments.attributes)) {
-                throw new ImperativeError({msg: "Attributes file " + commandParameters.arguments.attributes + " does not exist"});
-            }
-        }
-
-        const attributesFile = path.join(inputDir,".zosattributes");
         let response;
-        if (fs.existsSync(attributesFile)) {
-            const attributesFileContents = fs.readFileSync(attributesFile).toString();
-            let attributes;
-            try {
-                attributes  = new ZosFilesAttributes(attributesFileContents);
-            } catch (err) {
-                throw new ImperativeError({msg: "Error parsing "+ attributesFile + ": " + err.message});
-            }
-            response = await Upload.dirToUSSDir(session, inputDir, commandParameters.arguments.USSDir,
-                commandParameters.arguments.binary, commandParameters.arguments.recursive, undefined, attributes);
+        const attributesFile = this.findAttributesFile(commandParameters, inputDir);
+
+        if (attributesFile) {
+            response  = await this.uploadWithAttributesFile
+                 (attributesFile, response, session, inputDir, commandParameters);
         } else {
             const filesMap: IUploadMap = this.buildFilesMap(commandParameters);
 
@@ -64,6 +52,51 @@ export default class DirToUSSDirHandler extends ZosFilesBaseHandler {
         commandParameters.response.console.log(formatMessage);
         return response;
     }
+
+    private findAttributesFile(commandParameters: IHandlerParameters, inputDir: string) {
+        let attributesFile;
+        if (commandParameters.arguments.attributes) {
+            if (!fs.existsSync(commandParameters.arguments.attributes)) {
+                throw new ImperativeError({ msg: "Attributes file " + commandParameters.arguments.attributes + " does not exist" });
+            }
+            attributesFile = commandParameters.arguments.attributes;
+        }
+        else {
+            const localAttributesFile = path.join(inputDir, ".zosattributes");
+            if (fs.existsSync(localAttributesFile)) {
+                attributesFile = localAttributesFile;
+            }
+        }
+        return attributesFile;
+    }
+
+    private async uploadWithAttributesFile(attributesFile: any,
+                                           response: any,
+                                           session: AbstractSession,
+                                           inputDir: string,
+                                           commandParameters: IHandlerParameters) {
+        let attributesFileContents;
+        try {
+            attributesFileContents = fs.readFileSync(attributesFile).toString();
+        }
+        catch (err) {
+            throw new ImperativeError({ msg: "Could not read attributes file " + attributesFile + ": " + err.message });
+        }
+        let attributes;
+        try {
+            attributes = new ZosFilesAttributes(attributesFileContents);
+        }
+        catch (err) {
+            throw new ImperativeError({ msg: "Error parsing " + attributesFile + ": " + err.message });
+        }
+        response = await Upload.dirToUSSDir(session,
+            inputDir, commandParameters.arguments.USSDir,
+            commandParameters.arguments.binary,
+            commandParameters.arguments.recursive,
+            undefined, attributes);
+        return response;
+    }
+
 
     private buildFilesMap(commandParameters: IHandlerParameters) {
         let filesMap: IUploadMap = null;

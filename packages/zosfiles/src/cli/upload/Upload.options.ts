@@ -87,5 +87,17 @@ export const UploadOptions: {[key: string]: ICommandOptionDefinition} = {
         description: strings.ASCII_FILES,
         type: "string",
         conflictsWith: ["binary-files"]
+    },
+
+    /**
+     * The attributes option
+     * @type {ICommandOptionDefinition}
+     */
+    attributes: {
+        name: "attributes",
+        aliases: ["attrs"],
+        description: "Path of an attributes file to control how files are uploaded",
+        type: "string",
+        conflictsWith: ["ascii-files, binary-files"]
     }
 };

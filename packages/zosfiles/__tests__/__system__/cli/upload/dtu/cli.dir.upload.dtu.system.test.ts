@@ -323,7 +323,7 @@ describe("Upload directory to USS", () => {
             return response.stdout[0];
         }
 
-        it.only("should accept zosattributes path as an argument", async () => {
+        it("should accept zosattributes path as an argument", async () => {
             const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/command_upload_dtu_subdir_ascii");
 
             const attributesPath = path.join(__dirname, "__data__", "command_upload_dtu_dir/external.attributes");

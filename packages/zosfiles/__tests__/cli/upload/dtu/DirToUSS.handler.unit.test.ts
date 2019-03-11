@@ -12,7 +12,8 @@
 import { Upload } from "../../../../src/api/methods/upload";
 import { UNIT_TEST_ZOSMF_PROF_OPTS } from "../../../../../../__tests__/__src__/mocks/ZosmfProfileMock";
 import * as fs from "fs";
-import { ZosFilesAttributes } from "../../../../src/api";
+import { ZosFilesAttributes } from "../../../../src/api/utils/ZosFilesAttributes";
+jest.mock("../../../../src/api/utils/ZosFilesAttributes");
 
 describe("Upload dir-to-uss handler", () => {
 
@@ -79,7 +80,6 @@ describe("Upload dir-to-uss handler", () => {
 
         beforeEach(() => {
 
-            // Mock the submit JCL function
             Upload.dirToUSSDir = jest.fn((session) => {
                 fakeSession = session;
                 return {
@@ -120,19 +120,55 @@ describe("Upload dir-to-uss handler", () => {
             const params = Object.assign({}, ...[DEFAULT_PARAMETERS]);
             params.arguments.attributes = "non-existent-file";
 
-            try {
-                // Invoke the handler with a full set of mocked arguments and response functions
-                await handler.process(params);
-            } catch (e) {
-                error = e;
-            }
+            await testHandlerGivesExpectedErrorWithParams("Attributes file non-existent-file does not exist",params);
+        });
 
-            expect(error).toBeDefined();
-            expect(error.message).toBe("Attributes file non-existent-file does not exist");
+        it("should give an error if file specified by --attributes cannot be read", async () => {
+            jest.spyOn(fs,"existsSync").mockReturnValue(true);
+            jest.spyOn(fs,"readFileSync").mockImplementationOnce(() => {
+                throw new Error("File not found");
+            });
+            const params = Object.assign({}, ...[DEFAULT_PARAMETERS]);
+            params.arguments.attributes = "dodgy file";
+
+            await testHandlerGivesExpectedErrorWithParams("Could not read attributes file dodgy file: File not found",params);
+        });
+        it("should override .zosattributes content with --attributes content", async () => {
+            jest.spyOn(fs,"existsSync").mockReturnValueOnce(true);
+            jest.spyOn(fs,"readFileSync").mockImplementationOnce((path: string) => {
+                if (path === "real file") {
+                    return "--attributes file contents";
+                } else if (path.endsWith(".zosattributes")) {
+                    return ".zosattributes file contents";
+                }
+            });
+            const mockAttributesFromParam = {attributes: "--attributes"};
+            const mockAttributesFromLocalFile = {attributes: ".zosattributes"};
+
+            (ZosFilesAttributes as any).mockImplementation( (fileContents: string) => {
+                if (fileContents === "--attributes file contents") {
+                    return mockAttributesFromParam;
+                } else if (fileContents === ".zosattributes file contents") {
+                    return mockAttributesFromLocalFile;
+                }
+            });
+
+            const params = Object.assign({}, ...[DEFAULT_PARAMETERS]);
+            params.arguments.attributes = "real file";
+
+            await testHanlderWorksWithParameters(params);
+
+            expect(Upload.dirToUSSDir).toHaveBeenCalledTimes(1);
+            expect(Upload.dirToUSSDir).toHaveBeenCalledWith(fakeSession, inputDir, USSDir, undefined, undefined, undefined, mockAttributesFromParam);
         });
 
         async function testHanlderWorksWithDefaultParameters() {
             const params = Object.assign({}, ...[DEFAULT_PARAMETERS]);
+            await testHanlderWorksWithParameters(params);
+        }
+
+        async function testHanlderWorksWithParameters(params: any) {
+            error = undefined;
             try {
                 // Invoke the handler with a full set of mocked arguments and response functions
                 await handler.process(params);
@@ -146,6 +182,17 @@ describe("Upload dir-to-uss handler", () => {
             expect(apiMessage).toMatchSnapshot();
             expect(logMessage).toMatchSnapshot();
         }
+
+
+        async function testHandlerGivesExpectedErrorWithParams(errorMsg: string, params: any) {
+            try {
+                await handler.process(params);
+            }
+            catch (e) {
+                error = e;
+            }
+            expect(error).toBeDefined();
+            expect(error.message).toBe(errorMsg);
+        }
     });
 });
-
