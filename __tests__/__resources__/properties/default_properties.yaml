@@ -36,6 +36,16 @@ systems:
         password: my-password
         account: &tsoaccount my-jes-account
     #-------------------------------------------------------------------------#
+    #  SSH testing properties                                                 #
+    #-------------------------------------------------------------------------#
+    ssh:
+        user: my-user-name
+        password: my-password
+        host: ssh-host
+        port: ssh-port
+        privateKey: ssh-private-key
+        keyPassphrase: ssh-private-key-passphrase
+    #-------------------------------------------------------------------------#
     #  Console API Tests parameters                                           #
     #-------------------------------------------------------------------------#
     unix:

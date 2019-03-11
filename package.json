@@ -55,9 +55,11 @@
     "typedocSpecifySrc": "typedoc --options ./typedoc.json",
     "audit:public": "npm audit --registry https://registry.npmjs.org/"
   },
-  "dependencies":   {
-    "@brightside/imperative": "^2.1.1-alpha.201902201501",
+  "dependencies": {
+    "@brightside/imperative": ">=2.0.0-0",
+    "@types/ssh2": "^0.5.38",
     "js-yaml": "3.9.0",
+    "ssh2": "^0.8.2",
     "minimatch": "^3.0.4",
     "@types/minimatch": "^3.0.3",
     "string-width": "2.1.1"
