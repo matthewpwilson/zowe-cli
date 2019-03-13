@@ -369,7 +369,9 @@ export default {
                     EX3: `Upload all files from the "local_dir" directory to the "/a/ibmuser/my_dir" USS directory ` +
                     `in default ASCII mode, while specifying a list of file names (without path) to be uploaded in binary mode:`,
                     EX4: `Upload all files from the "local_dir" directory to the "/a/ibmuser/my_dir" USS directory ` +
-                    `in binary mode, while specifying a list of file names (without path) to be uploaded in ASCII mode:`
+                    `in binary mode, while specifying a list of file names (without path) to be uploaded in ASCII mode:`,
+                    EX5: `Recursively upload all files from the "local_dir" directory to the "/a/ibmuser/my_dir" USS directory, ` +
+                    `specifying files to ignore and file encodings in the local file my_global_attributes:`
                 }
             },
         },
@@ -388,7 +390,8 @@ export default {
             ASCII_FILES: "Comma separated list of file names to be uploaded in ASCII mode. " +
             "Use this option when you upload a directory with --binary/-b flag, " +
             "but you want to specify certain files to be uploaded in ASCII mode. "  +
-            "All files matching specified file names will be uploaded in ASCII mode."
+            "All files matching specified file names will be uploaded in ASCII mode.",
+            ATTRIBUTES: "Path of an attributes file to control how files are uploaded"
         }
     }
 };

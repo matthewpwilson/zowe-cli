@@ -11,7 +11,8 @@
 
 
 import * as minimatch from "minimatch";
-import { Logger } from "@brightside/imperative";
+import { Logger, TextUtils } from "@brightside/imperative";
+import { ZosFilesMessages } from "../constants/ZosFiles.messages";
 
 export enum TransferMode {BINARY, TEXT}
 
@@ -85,7 +86,7 @@ export class ZosFilesAttributes {
             const remoteEncoding = parts[2];
 
             if (parts.length > ZosFilesAttributes.MAX_EXPECTED_FIELDS || parts.length < ZosFilesAttributes.MIN_EXPECTED_FIELDS) {
-                throw new Error("Syntax error on line " + lineNumber + " - expected <pattern> <local encoding> <remote encoding>.");
+                throw new Error(TextUtils.formatMessage(ZosFilesMessages.invalidAttributesSyntax.message, {lineNumber}));
             }
 
             if (localEncoding === "-") {
