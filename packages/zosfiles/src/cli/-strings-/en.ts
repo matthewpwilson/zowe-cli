@@ -110,7 +110,7 @@ export default {
         },
     },
     DELETE: {
-        DESCRIPTION: "Delete a data set",
+        DESCRIPTION: "Delete a data set or Unix System Services file",
         ACTIONS: {
             DATA_SET: {
                 DESCRIPTION: "Delete a data set permanently",
@@ -142,6 +142,21 @@ export default {
                     EX2: "Delete all expired VSAM data sets that match 'ibmuser.AAA.**.FFF'",
                     EX3: "Delete a non-expired VSAM data set named 'ibmuser.cntl.vsam'",
                     EX4: "Delete an expired VSAM data set named 'ibmuser.cntl.vsam' by overwriting the components with zeros"
+                }
+            },
+            USS: {
+                DESCRIPTION: "Delete a Unix Systems Services (USS) File or directory permanently",
+                POSITIONALS: {
+                    FILENAME: "The name of the file or directory that you want to delete"
+                },
+                OPTIONS: {
+                    FOR_SURE: "Specify this option to confirm that you want to delete the file or directory permanently.",
+                    RECURSIVE: "Delete directories recursively.",
+                },
+                EXAMPLES: {
+                    EX1: "Delete the empty directory '/u/ibmuser/testcases'",
+                    EX2: "Delete the file named '/a/ibmuser/my_text.txt'",
+                    EX3: "Recursively delete the directory named '/u/ibmuser/testcases'"
                 }
             }
         }
@@ -297,6 +312,18 @@ export default {
                     EX3: `Show all data sets of the user "ibmuser"`,
                     EX4: `Show attributes of all data sets of the user "ibmuser"`,
                     EX5: `Show the first 5 data sets of the user "ibmuser"`
+                }
+            },
+            USS_FILE: {
+                SUMMARY: "List USS files",
+                DESCRIPTION: "List USS files and directories in a UNIX file path",
+                POSITIONALS: {
+                    PATH: "The directory containing the files and directories to be listed"
+                },
+                EXAMPLES: {
+                    EX1: `Show the files and directories in path '/u/ibmuser'`,
+                    EX2: "Show the files and directories in path '/u/ibmuser displaying only the file or directory name",
+                    EX3: "Show the files and directories in path '/u/ibmuser' displaying the headers associated with the file detail"
                 }
             }
         },
