@@ -12,7 +12,11 @@
 import { ICommandDefinition } from "@brightside/imperative";
 import { DeleteDefinition } from "./delete/Delete.definition";
 import { CreateDefinition } from "./create/Create.definition";
+import { StartDefinition } from "./start/Start.definition";
 import { ZosmfSession } from "../../../zosmf";
+import { ListDefinition } from "./list/List.definition";
+import { ArchiveDefinition } from "./archive/Archive.definition";
+
 
 /**
  * This object defines the top level command group for zosworkflows. This is not
@@ -24,11 +28,13 @@ const definition: ICommandDefinition = {
     name: "zos-workflows",
     aliases: ["wf"],
     type: "group",
-    summary: "Manage z/OSMF workflows",
-    description: "Manage z/OSMF workflows, create workflow instances, and more",
+    description: "Create and manage z/OSMF workflows on a z/OS system",
     children: [
         CreateDefinition,
-        DeleteDefinition
+        StartDefinition,
+        ListDefinition,
+        ArchiveDefinition,
+        DeleteDefinition,
     ],
     passOn: [
         {

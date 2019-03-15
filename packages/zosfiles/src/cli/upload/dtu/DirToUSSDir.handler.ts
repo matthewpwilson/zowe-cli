@@ -11,7 +11,7 @@
 
 import { AbstractSession, IHandlerParameters, TextUtils, ImperativeError } from "@brightside/imperative";
 import { Upload } from "../../../api/methods/upload";
-import { IZosFilesResponse, ZosFilesAttributes } from "../../../api";
+import { IZosFilesResponse, ZosFilesAttributes, ZosFilesMessages } from "../../../api";
 import { ZosFilesBaseHandler } from "../../ZosFilesBase.handler";
 import * as path from "path";
 import * as fs from "fs";
@@ -57,7 +57,8 @@ export default class DirToUSSDirHandler extends ZosFilesBaseHandler {
         let attributesFile;
         if (commandParameters.arguments.attributes) {
             if (!fs.existsSync(commandParameters.arguments.attributes)) {
-                throw new ImperativeError({ msg: "Attributes file " + commandParameters.arguments.attributes + " does not exist" });
+                throw new ImperativeError({ msg: TextUtils.formatMessage(ZosFilesMessages.attributesFileNotFound.message,
+                    {file: commandParameters.arguments.attributes})});
             }
             attributesFile = commandParameters.arguments.attributes;
         }
@@ -80,14 +81,18 @@ export default class DirToUSSDirHandler extends ZosFilesBaseHandler {
             attributesFileContents = fs.readFileSync(attributesFile).toString();
         }
         catch (err) {
-            throw new ImperativeError({ msg: "Could not read attributes file " + attributesFile + ": " + err.message });
+            throw new ImperativeError({ msg: TextUtils.formatMessage(
+                ZosFilesMessages.errorReadingAttributesFile.message,
+                {file: attributesFile, message: err.message})});
         }
         let attributes;
         try {
             attributes = new ZosFilesAttributes(attributesFileContents);
         }
         catch (err) {
-            throw new ImperativeError({ msg: "Error parsing " + attributesFile + ": " + err.message });
+            throw new ImperativeError({ msg: TextUtils.formatMessage(
+                ZosFilesMessages.errorParsingAttributesFile.message,
+                {file: attributesFile, message: err.message})});
         }
         response = await Upload.dirToUSSDir(session,
             inputDir, commandParameters.arguments.USSDir,

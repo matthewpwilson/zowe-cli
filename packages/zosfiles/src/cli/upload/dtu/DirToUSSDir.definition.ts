@@ -69,6 +69,10 @@ export const DirToUSSDirDefinition: ICommandDefinition = {
         {
             description: strings.EXAMPLES.EX4,
             options: `"local_dir" "/a/ibmuser/my_dir" --binary --ascii-files "myFile1.txt,myFile2.txt,myFile3.txt"`
+        },
+        {
+            description: strings.EXAMPLES.EX5,
+            options: `"local_dir" "/a/ibmuser/my_dir" --recursive --attributes my_global_attributes`
         }
     ]
 };
