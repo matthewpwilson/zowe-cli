@@ -12,21 +12,53 @@
 import { Shell, SshSession } from "../../../index";
 import { ITestEnvironment } from "../../../../../__tests__/__src__/environment/doc/response/ITestEnvironment";
 import { TestEnvironment } from "../../../../../__tests__/__src__/environment/TestEnvironment";
+import { TestProperties } from "../../../../../__tests__/__src__/properties/TestProperties";
+import { ITestSystemSchema } from "../../../../../__tests__/__src__/properties/ITestSystemSchema";
 
-let testEnvironment: ITestEnvironment;
+let TEST_ENVIRONMENT: ITestEnvironment;
 let SSH_SESSION: SshSession;
+let systemProps: TestProperties;
+let defaultSystem: ITestSystemSchema;
+const TIME_OUT = 10000;
 
-describe("Shell", () => {
+describe("zowe uss issue ssh api call test", () => {
 
     beforeAll(async () => {
-        testEnvironment = await TestEnvironment.setUp({
-            testName: "shell_execute_command"
+        TEST_ENVIRONMENT = await TestEnvironment.setUp({
+            testName: "issue_ssh_system_api",
+            tempProfileTypes: ["ssh"]
         });
-        SSH_SESSION = TestEnvironment.createSshSession(testEnvironment);
+        SSH_SESSION = TestEnvironment.createSshSession(TEST_ENVIRONMENT);
+        systemProps = new TestProperties(TEST_ENVIRONMENT.systemTestProperties);
+        defaultSystem = systemProps.getDefaultSystem();
+    });
+
+    afterAll(async () => {
+        await TestEnvironment.cleanUp(TEST_ENVIRONMENT);
     });
 
     it ("should execute uname command on the remote system by ssh and return operating system name", async () => {
-        // TODO: make a meaningful test e.g. check output from stdout
-        // await Shell.executeSsh(SSH_SESSION, "uname");
-    });
+        const command = "uname";
+        let stdoutData: string;
+        await Shell.executeSsh(SSH_SESSION, command, (data: string) => {
+            if (!data.includes("exit")) {
+                stdoutData += data;
+            }
+        });
+        expect(stdoutData).toMatch("OS/390");
+
+    }, TIME_OUT);
+
+    it ("should resolve cwd option", async () => {
+        const command = "pwd";
+        const cwd =  `${defaultSystem.unix.testdir}/`;
+        let stdoutData: string;
+        await Shell.executeSshCwd(SSH_SESSION, command, cwd, (data: string) => {
+            if (!data.includes("exit")) {
+                stdoutData += data;
+            }
+        });
+        expect(stdoutData).toMatch(new RegExp("\\" + cwd + "\\s"));
+    }, TIME_OUT);
+
 });
