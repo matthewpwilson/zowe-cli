@@ -124,7 +124,16 @@ describe("ZosFilesAttributes", () => {
     describe("File syntax", () => {
         it("should treat lines beginning with # as comments", () => {
             const testable = new ZosFilesAttributes("#foo.stuff -");
-            expect(testable.fileShouldBeUploaded("#foo.stuff")).toBeTruthy();
+            expect(testable.fileShouldBeUploaded("foo.stuff")).toBeTruthy();
+        });
+
+        it("should treat lines beginning with # as comments in the middle of the file", () => {
+            const testable = new ZosFilesAttributes("foo.stuff - \n # Ignore files called baz.stuff - \n baz.stuff -");
+            expect(testable.fileShouldBeUploaded("foo.stuff")).toBeFalsy();
+            expect(testable.fileShouldBeUploaded("bar.stuff")).toBeTruthy();
+            expect(testable.fileShouldBeUploaded("baz.stuff")).toBeFalsy();
+
+
         });
 
         it("should ignore leading whitespace", () => {

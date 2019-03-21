@@ -77,7 +77,8 @@ export class ZosFilesAttributes {
         let lineNumber = 0;
         lines.forEach((line) => {
             lineNumber++;
-            if (line.trim() === "") {
+            line = line.trim();
+            if (line === "" || line.startsWith("#")) {
                 return;
             }
             const parts = line.trim().split(/\s+/);
