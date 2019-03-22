@@ -9,7 +9,7 @@
 *
 */
 
-import { AbstractSession, ImperativeError, ImperativeExpect, Logger, TextUtils } from "@brightside/imperative";
+import { AbstractSession, ImperativeError, ImperativeExpect, Logger, TextUtils } from "@zowe/imperative";
 import { isNullOrUndefined } from "util";
 import { ZosmfHeaders, ZosmfRestClient } from "../../../../../rest";
 import { ZosFilesConstants } from "../../constants/ZosFiles.constants";
@@ -371,6 +371,7 @@ export class Create {
         ImperativeExpect.toNotBeEqual(type, "", ZosFilesMessages.missingRequestType.message);
         ussPath = path.posix.normalize(ussPath);
         ussPath = ussPath.charAt(0) === "/" ? ussPath.substring(1) : ussPath;
+        ussPath = encodeURIComponent(ussPath);
         const parameters: string = `${ZosFilesConstants.RESOURCE}${ZosFilesConstants.RES_USS_FILES}/${ussPath}`;
         const headers: object[] = [ZosmfHeaders.X_CSRF_ZOSMF_HEADER, {"Content-Type": "application/json"}];
         let payload: object = { type };

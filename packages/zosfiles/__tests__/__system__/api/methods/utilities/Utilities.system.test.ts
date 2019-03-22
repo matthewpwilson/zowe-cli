@@ -11,7 +11,7 @@
 
 import { ITestEnvironment } from "../../../../../../../__tests__/__src__/environment/doc/response/ITestEnvironment";
 import { TestEnvironment } from "../../../../../../../__tests__/__src__/environment/TestEnvironment";
-import { Session } from "@brightside/imperative";
+import { Session } from "@zowe/imperative";
 import { Utilities, Tag } from "../../../../../src/api";
 
 let REAL_SESSION: Session;

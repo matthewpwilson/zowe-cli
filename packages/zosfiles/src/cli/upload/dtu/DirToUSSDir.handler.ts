@@ -9,7 +9,7 @@
 *
 */
 
-import { AbstractSession, IHandlerParameters, TextUtils, ImperativeError } from "@brightside/imperative";
+import { AbstractSession, IHandlerParameters, TextUtils, ITaskWithStatus, TaskStage, ImperativeError } from "@zowe/imperative";
 import { Upload } from "../../../api/methods/upload";
 import { IZosFilesResponse, ZosFilesAttributes, ZosFilesMessages } from "../../../api";
 import { ZosFilesBaseHandler } from "../../ZosFilesBase.handler";
@@ -26,9 +26,15 @@ export default class DirToUSSDirHandler extends ZosFilesBaseHandler {
     public async processWithSession(commandParameters: IHandlerParameters,
                                     session: AbstractSession): Promise<IZosFilesResponse> {
 
+        const status: ITaskWithStatus = {
+            statusMessage: "Uploading all files",
+            percentComplete: 0,
+            stageName: TaskStage.IN_PROGRESS
+        };
+
         let inputDir: string;
 
-        // resolving to full path if passed path is not absolute
+        // resolving to full path if local path passed is not absolute
         if (path.isAbsolute(commandParameters.arguments.inputDir)) {
             inputDir = commandParameters.arguments.inputDir;
         } else {
@@ -40,12 +46,29 @@ export default class DirToUSSDirHandler extends ZosFilesBaseHandler {
 
         if (attributesFile) {
             response  = await this.uploadWithAttributesFile
-                 (attributesFile, response, session, inputDir, commandParameters);
+                 (attributesFile, response, session, inputDir, commandParameters, status);
         } else {
             const filesMap: IUploadMap = this.buildFilesMap(commandParameters);
 
-            response = await Upload.dirToUSSDir(session, inputDir, commandParameters.arguments.USSDir,
-                commandParameters.arguments.binary, commandParameters.arguments.recursive, filesMap);
+            if(commandParameters.arguments.recursive) {
+                response = await Upload.dirToUSSDirRecursive(session,
+                    inputDir,
+                    commandParameters.arguments.USSDir, {
+                        binary: commandParameters.arguments.binary,
+                        filesMap,
+                        maxConcurrentRequests: commandParameters.arguments.maxConcurrentRequests,
+                        task: status
+                    });
+            } else {
+                response = await Upload.dirToUSSDir(session,
+                    inputDir,
+                    commandParameters.arguments.USSDir, {
+                        binary: commandParameters.arguments.binary,
+                        filesMap,
+                        maxConcurrentRequests: commandParameters.arguments.maxConcurrentRequests,
+                        task: status
+                    });
+            }
         }
 
         const formatMessage = TextUtils.prettyJson(response.apiResponse);
@@ -75,7 +98,8 @@ export default class DirToUSSDirHandler extends ZosFilesBaseHandler {
                                            response: any,
                                            session: AbstractSession,
                                            inputDir: string,
-                                           commandParameters: IHandlerParameters) {
+                                           commandParameters: IHandlerParameters,
+                                           status: ITaskWithStatus) {
         let attributesFileContents;
         try {
             attributesFileContents = fs.readFileSync(attributesFile).toString();
@@ -87,18 +111,32 @@ export default class DirToUSSDirHandler extends ZosFilesBaseHandler {
         }
         let attributes;
         try {
-            attributes = new ZosFilesAttributes(attributesFileContents);
+            attributes = new ZosFilesAttributes(attributesFileContents,inputDir);
         }
         catch (err) {
             throw new ImperativeError({ msg: TextUtils.formatMessage(
                 ZosFilesMessages.errorParsingAttributesFile.message,
                 {file: attributesFile, message: err.message})});
         }
-        response = await Upload.dirToUSSDir(session,
-            inputDir, commandParameters.arguments.USSDir,
-            commandParameters.arguments.binary,
-            commandParameters.arguments.recursive,
-            undefined, attributes);
+
+        if(commandParameters.arguments.recursive) {
+            response = await Upload.dirToUSSDirRecursive(session,
+                inputDir,
+                commandParameters.arguments.USSDir, {
+                    attributes,
+                    maxConcurrentRequests: commandParameters.arguments.maxConcurrentRequests,
+                    task: status
+                });
+        } else {
+            response = await Upload.dirToUSSDir(session,
+                inputDir,
+                commandParameters.arguments.USSDir, {
+                    attributes,
+                    maxConcurrentRequests: commandParameters.arguments.maxConcurrentRequests,
+                    task: status
+                });
+        }
+
         return response;
     }
 
