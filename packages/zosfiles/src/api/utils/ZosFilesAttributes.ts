@@ -109,7 +109,7 @@ export class ZosFilesAttributes {
 
         let result: IUploadAttributes = null;
         this.attributes.forEach((attributes, pattern) => {
-            if (minimatch(relativePath,pattern,{matchBase: true })) {
+            if (minimatch(relativePath,pattern,{matchBase: true, dot: true })) {
                 result = attributes;
             }
         });

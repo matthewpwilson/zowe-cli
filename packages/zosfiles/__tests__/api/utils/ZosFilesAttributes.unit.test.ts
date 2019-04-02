@@ -110,7 +110,7 @@ describe("ZosFilesAttributes", () => {
 
         it("let last pattern determine transfer mode", () => {
             const testable = new ZosFilesAttributes("*.binary ISO8859-1 ISO8859-1\n" +
-                                                    "not.binary ISO8859-1 EBCDIC");
+            "not.binary ISO8859-1 EBCDIC");
             expect(testable.getFileTransferMode("foo.binary")).toBe(TransferMode.BINARY);
             expect(testable.getFileTransferMode("not.binary")).toBe(TransferMode.TEXT);
         });
@@ -127,6 +127,11 @@ describe("ZosFilesAttributes", () => {
             expect(testable.getRemoteEncoding("foo.ascii")).toBe("ISO8859-1");
         });
 
+        it("tags hidden files as specified",  () => {
+            const attributesFileContents = "*.hidden binary binary";
+            const testable = new ZosFilesAttributes(attributesFileContents);
+            expect(testable.getRemoteEncoding(".hidden")).toBe("binary");
+        });
         it("shuld return the remote encoding with base path", () => {
             const testable = new ZosFilesAttributes("foo.ascii ISO8859-1 ISO8859-1","/base/path");
             expect(testable.getRemoteEncoding("/base/path/foo.ascii")).toBe("ISO8859-1");
