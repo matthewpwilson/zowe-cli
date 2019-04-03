@@ -75,6 +75,15 @@ export class ZosFilesAttributes {
         return attributes.remoteEncoding;
     }
 
+    public getLocalEncoding(path: string): string {
+        const attributes = this.findLastMatchingAttributes(path);
+        if (attributes === null) {
+            return "ISO8859-1";
+        }
+
+        return attributes.localEncoding;
+    }
+
     private parse(attributesFileContents: string) {
         const lines = attributesFileContents.split("\n");
         let lineNumber = 0;

@@ -387,7 +387,8 @@ export class Upload {
     public static async bufferToUSSFile(session: AbstractSession,
                                         ussname: string,
                                         buffer: Buffer,
-                                        binary: boolean = false) {
+                                        binary: boolean = false,
+                                        localEncoding?: string) {
         ImperativeExpect.toNotBeNullOrUndefined(ussname, ZosFilesMessages.missingUSSFileName.message);
         ussname = path.posix.normalize(ussname);
         ussname = Upload.formatUnixFilepath(ussname);
@@ -397,6 +398,9 @@ export class Upload {
         if (binary) {
             headers.push(ZosmfHeaders.OCTET_STREAM);
             headers.push(ZosmfHeaders.X_IBM_BINARY);
+        } else if (localEncoding) {
+            headers.push({"Content-Type": localEncoding});
+            headers.push(ZosmfHeaders.X_IBM_TEXT);
         } else {
             headers.push(ZosmfHeaders.TEXT_PLAIN);
         }
@@ -407,7 +411,8 @@ export class Upload {
     public static async fileToUSSFile(session: AbstractSession,
                                       inputFile: string,
                                       ussname: string,
-                                      binary: boolean = false): Promise<IZosFilesResponse> {
+                                      binary: boolean = false,
+                                      localEncoding?: string): Promise<IZosFilesResponse> {
         ImperativeExpect.toNotBeNullOrUndefined(inputFile, ZosFilesMessages.missingInputFile.message);
         ImperativeExpect.toNotBeNullOrUndefined(ussname, ZosFilesMessages.missingUSSFileName.message);
         ImperativeExpect.toNotBeEqual(ussname, "", ZosFilesMessages.missingUSSFileName.message);
@@ -442,7 +447,7 @@ export class Upload {
         // read payload from file
         payload = fs.readFileSync(inputFile);
 
-        await this.bufferToUSSFile(session, ussname, payload, binary);
+        await this.bufferToUSSFile(session, ussname, payload, binary, localEncoding);
         result = {
             success: true,
             from: inputFile,
@@ -726,7 +731,12 @@ export class Upload {
                                                            attributes: ZosFilesAttributes) {
         if (attributes.fileShouldBeUploaded(localPath)) {
             const binary = attributes.getFileTransferMode(localPath) === TransferMode.BINARY;
-            await this.fileToUSSFile(session, localPath, ussPath, binary);
+            if (binary) {
+                await this.fileToUSSFile(session, localPath, ussPath, binary);
+            } else {
+                await this.fileToUSSFile(session, localPath, ussPath, binary, attributes.getLocalEncoding(localPath));
+            }
+
             const tag = attributes.getRemoteEncoding(localPath);
             if (tag === Tag.BINARY.valueOf() ) {
                 await Utilities.chtag(session,ussPath,Tag.BINARY);

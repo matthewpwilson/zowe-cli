@@ -773,6 +773,24 @@ describe("z/OS Files - Upload", () => {
             expect(zosmfExpectSpy).toHaveBeenCalledTimes(1);
             expect(zosmfExpectSpy).toHaveBeenCalledWith(dummySession, endpoint, headers, data);
         });
+
+        it("should set local encoding if specified", async () => {
+            const data: Buffer = Buffer.from("testing");
+            const endpoint = path.posix.join(ZosFilesConstants.RESOURCE, ZosFilesConstants.RES_USS_FILES, dsName);
+            const headers = [{"Content-Type": "UCS-2"}, ZosmfHeaders.X_IBM_TEXT];
+
+            try {
+                USSresponse = await Upload.bufferToUSSFile(dummySession, dsName, data, false, "UCS-2");
+            } catch (err) {
+                error = err;
+            }
+
+            expect(error).toBeUndefined();
+            expect(USSresponse).toBeDefined();
+
+            expect(zosmfExpectSpy).toHaveBeenCalledTimes(1);
+            expect(zosmfExpectSpy).toHaveBeenCalledWith(dummySession, endpoint, headers, data);
+        });
     });
 
     describe("dirToUSSDirRecursive", () => {
@@ -1054,6 +1072,13 @@ describe("z/OS Files - Upload", () => {
                         return "binary";
                     }
                 });
+                attributesMock.getLocalEncoding = jest.fn((filePath: string) => {
+                    if (filePath.endsWith("textfile") || filePath.endsWith("asciifile")) {
+                        return "ISO8859-1";
+                    } else {
+                        return "binary";
+                    }
+                });
             });
 
             it("should upload files unless they are ignored by attributes", async () => {
@@ -1133,7 +1158,8 @@ describe("z/OS Files - Upload", () => {
                 expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession,
                                                              `${path.normalize(`${testPath}/textfile`)}`,
                                                              `${dsName}/textfile`,
-                                                              false);
+                                                              false,
+                                                              "ISO8859-1");
                 expect(fileToUSSFileSpy).toHaveBeenCalledWith(dummySession,
                                                              `${path.normalize(`${testPath}/binaryfile`)}`,
                                                              `${dsName}/binaryfile`, true);

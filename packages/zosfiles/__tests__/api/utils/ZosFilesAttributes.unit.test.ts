@@ -143,6 +143,18 @@ describe("ZosFilesAttributes", () => {
         });
     });
 
+    describe("Local encoding", () => {
+        it("should default to ISO8859-1 if no pattern is matched", () => {
+            const testable = new ZosFilesAttributes("*.stuff binary binary");
+            expect(testable.getLocalEncoding("foo.ascii")).toBe("ISO8859-1");
+        });
+
+        it("shuld return the local encoding", () => {
+            const testable = new ZosFilesAttributes("*.ucs2 UCS-2 UTF-8");
+            expect(testable.getLocalEncoding("foo.ucs2")).toBe("UCS-2");
+        });
+    });
+
     describe("File syntax", () => {
         it("should treat lines beginning with # as comments", () => {
             const testable = new ZosFilesAttributes("#foo.stuff -");
