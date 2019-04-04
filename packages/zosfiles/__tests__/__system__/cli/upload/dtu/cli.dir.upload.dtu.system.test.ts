@@ -324,26 +324,6 @@ describe("Upload directory to USS", () => {
             const localBinaryFileBuffer = fs.readFileSync(path.join(localDirName,"bar.binary"));
             expect(remoteBinaryFileBuffer.equals(localBinaryFileBuffer)).toBeTruthy();
         });
-
-        it.only("should convert from the local encoding specified", async () => {
-            const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_ucs2_files");
-
-            testSuccessfulUpload(localDirName);
-
-            // We're uploading a local file in UTF-16, which will get converted to EBCDIC.
-            // If we download it again in text mode, we should get an ASCII version of the original content.
-            const remoteTextFileBuffer = await Get.USSFile(REAL_SESSION, path.join(ussname,"ucs2.txt"),{binary: false});
-            const localTextFileBuffer = (buffer as any).transcode(fs.readFileSync(path.join(localDirName,"ucs2.txt")),"UCS-2","ascii");
-            const remoteText = remoteTextFileBuffer.toString("ascii").trim();
-            const localText = localTextFileBuffer.toString("ascii").trim();
-            console.log(remoteTextFileBuffer.toString("hex"));
-            console.log(localTextFileBuffer.toString("hex"));
-            console.log(new Buffer(localText,"ascii").toString("hex"));
-            console.log(new Buffer(remoteText,"ascii").toString("hex"));
-
-            expect(remoteText).toBe(localText);
-        });
-
         it("should tag uploaded files according to remote encoding", async () => {
             const localDirName = path.join(__dirname, "__data__", "command_upload_dtu_dir/dir_with_mixed_files");
 
