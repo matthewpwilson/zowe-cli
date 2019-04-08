@@ -9,7 +9,7 @@
 *
 */
 
-import { ICommandOptionDefinition } from "@brightside/imperative";
+import { ICommandOptionDefinition } from "@zowe/imperative";
 
 /**
  * Object containing all extra options to be used by the list active workflow details commands.
@@ -26,8 +26,8 @@ export const ActiveWorkflowDetailsCommonOptions: { [key: string]: ICommandOption
         description: "List active workflow details by specified workflow name.",
         type: "string",
         required: false,
-        // absenceImplications: ["workflow-key"],
-        // conflictsWith: ["workflow-key"],
+        absenceImplications: ["workflow-key"],
+        conflictsWith: ["workflow-key"],
     },
 
     /**
@@ -39,7 +39,7 @@ export const ActiveWorkflowDetailsCommonOptions: { [key: string]: ICommandOption
         aliases: ["wk"],
         description: "List active workflow details by specified workflow key.",
         type: "string",
-        required: true,
+        required: false,
         // absenceImplications: ["workflow-name"]
         // conflictsWith: ["workflow-name"],
     },

@@ -9,7 +9,7 @@
 *
 */
 
-import { IExplanationMap } from "@brightside/imperative";
+import { IExplanationMap } from "@zowe/imperative";
 
 /**
  * Interface for z/OSMF API response.
@@ -86,5 +86,12 @@ export interface IWorkflowsInfo {
      * @memberof IWorkflowsInfo
      */
     statusName?: string;
+
+    /**
+     * Indicates the URI of archived workflow.
+     * @type {string}
+     * @memberof IWorkflowsInfo
+     */
+    archivedInstanceURI?: string;
 }
 

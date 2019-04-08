@@ -9,12 +9,14 @@
 *
 */
 
-import { ICommandOptionDefinition } from "@brightside/imperative";
+import { ICommandOptionDefinition } from "@zowe/imperative";
 
 import i18nTypings from "../-strings-/en";
 
 // Does not use the import in anticipation of some internationalization work to be done later.
 const strings = (require("../-strings-/en").default as typeof i18nTypings).UPLOAD.OPTIONS;
+
+const maxConcurrentRequestsMaxValue = 99999;
 
 /**
  * Object containing all options to be used by the Upload API
@@ -99,5 +101,17 @@ export const UploadOptions: {[key: string]: ICommandOptionDefinition} = {
         description: strings.ATTRIBUTES,
         type: "string",
         conflictsWith: ["ascii-files, binary-files"]
-    }
+    },
+    /**
+     *  The maximum concurrent requests for upload
+     * @type {ICommandOptionDefinition}
+     */
+    maxConcurrentRequests: {
+        name: "max-concurrent-requests",
+        aliases: ["mcr"],
+        description: strings.MAX_CONCURRENT_REQUESTS,
+        type: "number",
+        defaultValue: 1,
+        numericValueRange: [0, maxConcurrentRequestsMaxValue]
+    },
 };

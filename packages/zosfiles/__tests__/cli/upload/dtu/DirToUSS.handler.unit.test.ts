@@ -22,6 +22,7 @@ describe("Upload dir-to-uss handler", () => {
         const inputDir = "/somedir/test_dir";
         const USSDir = "USS_dir";
         let handler: any;
+        const UPLOAD_OPTIONS_ARG_INDEX = 3;
 
         // Vars populated by the mocked function
         let error: any;
@@ -102,7 +103,16 @@ describe("Upload dir-to-uss handler", () => {
 
             await testHanlderWorksWithDefaultParameters();
             expect(Upload.dirToUSSDir).toHaveBeenCalledTimes(1);
-            expect(Upload.dirToUSSDir).toHaveBeenCalledWith(fakeSession, inputDir, USSDir, undefined, undefined, null);
+            expect(Upload.dirToUSSDir).toHaveBeenCalledWith(fakeSession, inputDir, USSDir, {
+                binary: undefined,
+                filesMap: null,
+                maxConcurrentRequests: undefined,
+                recursive: undefined,
+                task: {
+                    percentComplete: 0,
+                    stageName: 0,
+                    statusMessage: "Uploading all files"}
+                });
         });
         it("should pass attributes when a .zosattributes file is present", async () => {
             jest.spyOn(fs,"existsSync").mockReturnValue(true);
@@ -111,8 +121,7 @@ describe("Upload dir-to-uss handler", () => {
 
             await testHanlderWorksWithDefaultParameters();
             expect(Upload.dirToUSSDir).toHaveBeenCalledTimes(1);
-            expect(Upload.dirToUSSDir).toHaveBeenCalledWith(fakeSession, inputDir, USSDir, undefined,
-                                                            undefined, undefined, expect.any(ZosFilesAttributes));
+            expect((Upload.dirToUSSDir as jest.Mock).mock.calls[0][UPLOAD_OPTIONS_ARG_INDEX].attributes).toBeInstanceOf(ZosFilesAttributes);
         });
 
         it("should give an error if --attributes specifies a non-existent file", async () => {
@@ -159,7 +168,8 @@ describe("Upload dir-to-uss handler", () => {
             await testHanlderWorksWithParameters(params);
 
             expect(Upload.dirToUSSDir).toHaveBeenCalledTimes(1);
-            expect(Upload.dirToUSSDir).toHaveBeenCalledWith(fakeSession, inputDir, USSDir, undefined, undefined, undefined, mockAttributesFromParam);
+            expect((Upload.dirToUSSDir as jest.Mock).mock.calls[0][UPLOAD_OPTIONS_ARG_INDEX].attributes).toBe(mockAttributesFromParam);
+
         });
 
         async function testHanlderWorksWithDefaultParameters() {

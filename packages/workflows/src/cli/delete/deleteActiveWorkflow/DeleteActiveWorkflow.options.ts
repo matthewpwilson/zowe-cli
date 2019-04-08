@@ -9,7 +9,7 @@
 *
 */
 
-import { ICommandOptionDefinition } from "@brightside/imperative";
+import { ICommandOptionDefinition } from "@zowe/imperative";
 
 /**
  * Object containing all extra options to be used by the delete active workflow commands.
@@ -20,14 +20,14 @@ export const DeleteWorkflowOptions: { [key: string]: ICommandOptionDefinition } 
      * Parameter to delete workflow by workflow name
      * @type {ICommandOptionDefinition}
      */
-    name: {
-        name: "name",
-        aliases: ["nm"],
+    workflowName: {
+        name: "workflow-name",
+        aliases: ["wn"],
         description: "Delete active workflow by specified workflow name",
         type: "string",
         required: false,
-        // absenceImplications: ["by-workflow-key"],
-        // conflictsWith: ["by-workflow-key"],
+        absenceImplications: ["workflow-key"],
+        conflictsWith: ["workflow-key"],
     },
 
     /**
@@ -39,7 +39,7 @@ export const DeleteWorkflowOptions: { [key: string]: ICommandOptionDefinition } 
         aliases: ["wk"],
         description: "Delete active workflow by specified workflow key",
         type: "string",
-        required: true,
+        required: false,
         // absenceImplications: ["by-name"]
         // conflictsWith: ["by-name"],
     },

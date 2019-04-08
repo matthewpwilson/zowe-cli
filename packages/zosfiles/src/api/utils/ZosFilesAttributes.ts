@@ -11,8 +11,9 @@
 
 
 import * as minimatch from "minimatch";
-import { Logger, TextUtils } from "@brightside/imperative";
+import { Logger, TextUtils } from "@zowe/imperative";
 import { ZosFilesMessages } from "../constants/ZosFiles.messages";
+import * as pathUtils from "path";
 
 export enum TransferMode {BINARY, TEXT}
 
@@ -31,9 +32,11 @@ export class ZosFilesAttributes {
     private static MIN_EXPECTED_FIELDS = 2;
 
     private attributes = new Map<string,IUploadAttributes>();
+    private basePath: string;
 
-    constructor(attributesFileContents: string) {
+    constructor(attributesFileContents: string, basePath?: string) {
         this.parse(attributesFileContents);
+        this.basePath = basePath;
     }
 
     public fileShouldBeUploaded(path: string): boolean {
@@ -72,6 +75,15 @@ export class ZosFilesAttributes {
         return attributes.remoteEncoding;
     }
 
+    public getLocalEncoding(path: string): string {
+        const attributes = this.findLastMatchingAttributes(path);
+        if (attributes === null) {
+            return "ISO8859-1";
+        }
+
+        return attributes.localEncoding;
+    }
+
     private parse(attributesFileContents: string) {
         const lines = attributesFileContents.split("\n");
         let lineNumber = 0;
@@ -99,9 +111,14 @@ export class ZosFilesAttributes {
     }
 
     private findLastMatchingAttributes(path: string): IUploadAttributes {
+        let relativePath = path;
+        if (this.basePath) {
+            relativePath = pathUtils.relative(this.basePath,path);
+        }
+
         let result: IUploadAttributes = null;
         this.attributes.forEach((attributes, pattern) => {
-            if (minimatch(path,pattern,{matchBase: true })) {
+            if (minimatch(relativePath,pattern,{matchBase: true, dot: true })) {
                 result = attributes;
             }
         });

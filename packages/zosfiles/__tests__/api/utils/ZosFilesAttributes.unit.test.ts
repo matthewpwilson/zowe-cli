@@ -40,6 +40,12 @@ describe("ZosFilesAttributes", () => {
 
         });
 
+        it("appends base path when matching patterns", () => {
+            const attributesFileContents = "bar/foo.stuff -";
+            const testable = new ZosFilesAttributes(attributesFileContents, "/my/test/dir");
+            expect(testable.fileShouldBeUploaded("/my/test/dir/bar/foo.stuff")).toBeFalsy();
+        });
+
         it("ignores files matched by a *", () => {
             const attributesFileContents = "*.stuff -";
             const testable = new ZosFilesAttributes(attributesFileContents);
@@ -50,6 +56,12 @@ describe("ZosFilesAttributes", () => {
         it("ignores files within directories matched by a *", () => {
             const attributesFileContents = "*.stuff -";
             const testable = new ZosFilesAttributes(attributesFileContents);
+            expect(testable.fileShouldBeUploaded("/a/nestted/path/to/foo.stuff")).toBeFalsy();
+        });
+
+        it("ignores files within directories matched by a * with basepath", () => {
+            const attributesFileContents = "*.stuff -";
+            const testable = new ZosFilesAttributes(attributesFileContents, "/a/nested");
             expect(testable.fileShouldBeUploaded("/a/nestted/path/to/foo.stuff")).toBeFalsy();
         });
 
@@ -98,7 +110,7 @@ describe("ZosFilesAttributes", () => {
 
         it("let last pattern determine transfer mode", () => {
             const testable = new ZosFilesAttributes("*.binary ISO8859-1 ISO8859-1\n" +
-                                                    "not.binary ISO8859-1 EBCDIC");
+            "not.binary ISO8859-1 EBCDIC");
             expect(testable.getFileTransferMode("foo.binary")).toBe(TransferMode.BINARY);
             expect(testable.getFileTransferMode("not.binary")).toBe(TransferMode.TEXT);
         });
@@ -115,9 +127,31 @@ describe("ZosFilesAttributes", () => {
             expect(testable.getRemoteEncoding("foo.ascii")).toBe("ISO8859-1");
         });
 
+        it("tags hidden files as specified",  () => {
+            const attributesFileContents = "*.hidden binary binary";
+            const testable = new ZosFilesAttributes(attributesFileContents);
+            expect(testable.getRemoteEncoding(".hidden")).toBe("binary");
+        });
+        it("shuld return the remote encoding with base path", () => {
+            const testable = new ZosFilesAttributes("foo.ascii ISO8859-1 ISO8859-1","/base/path");
+            expect(testable.getRemoteEncoding("/base/path/foo.ascii")).toBe("ISO8859-1");
+        });
+
         it("should default to ISO8859-1 if no pattern is matched", () => {
             const testable = new ZosFilesAttributes("*.stuff binary binary");
             expect(testable.getRemoteEncoding("foo.ascii")).toBe("ISO8859-1");
+        });
+    });
+
+    describe("Local encoding", () => {
+        it("should default to ISO8859-1 if no pattern is matched", () => {
+            const testable = new ZosFilesAttributes("*.stuff binary binary");
+            expect(testable.getLocalEncoding("foo.ascii")).toBe("ISO8859-1");
+        });
+
+        it("shuld return the local encoding", () => {
+            const testable = new ZosFilesAttributes("*.ucs2 UCS-2 UTF-8");
+            expect(testable.getLocalEncoding("foo.ucs2")).toBe("UCS-2");
         });
     });
 
