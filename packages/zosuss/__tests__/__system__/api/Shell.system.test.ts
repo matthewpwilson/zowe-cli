@@ -39,11 +39,9 @@ describe("zowe uss issue ssh api call test", () => {
 
     it ("should execute uname command on the remote system by ssh and return operating system name", async () => {
         const command = "uname";
-        let stdoutData: string;
+        let stdoutData = "";
         await Shell.executeSsh(SSH_SESSION, command, (data: string) => {
-            if (!data.includes("exit")) {
-                stdoutData += data;
-            }
+            stdoutData += data;
         });
         expect(stdoutData).toMatch("OS/390");
 
@@ -52,7 +50,7 @@ describe("zowe uss issue ssh api call test", () => {
     it ("should resolve cwd option", async () => {
         const command = "pwd";
         const cwd =  `${defaultSystem.unix.testdir}/`;
-        let stdoutData: string;
+        let stdoutData = "";
         await Shell.executeSshCwd(SSH_SESSION, command, cwd, (data: string) => {
             stdoutData += data;
         });
