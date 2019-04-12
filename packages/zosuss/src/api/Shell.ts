@@ -47,10 +47,12 @@ export class Shell {
                     let isCommandOutput = false;
 
                     stream.on("close", () => {
+                        Logger.getAppLogger().debug("SSH connection closed");
                         conn.end();
                         resolve();
                     });
                     stream.on("data", (data: string) => {
+                        Logger.getAppLogger().debug("\n[Received data begin]" + data + "[Received data end]\n");
                         dataBuffer += data;
                         // if(dataBuffer.includes("\n")) {
                         if(dataBuffer.includes("\r")) {
@@ -61,7 +63,7 @@ export class Shell {
                             dataBuffer = dataBuffer.slice(dataBuffer.lastIndexOf("\r") + 1);
 
                             // check startCmdFlag: start printing out data
-                            if(dataToPrint.match(new RegExp(`\n${startCmdFlag}`))) {
+                            if(dataToPrint.match(new RegExp(`\n${startCmdFlag}`)) || dataToPrint.match(new RegExp("\\$ " + startCmdFlag))) {
                                 dataToPrint = dataToPrint.slice(dataToPrint.indexOf(`${startCmdFlag}`)+startCmdFlag.length);
                                 isCommandOutput = true;
                             }
@@ -90,7 +92,8 @@ export class Shell {
                     });
 
                     // exit multiple times in case of nested shells
-                    stream.end(`echo ${startCmdFlag}\n${command}\necho ${endCmdFlag}\nexit\nexit\nexit\nexit\nexit\nexit\nexit\nexit\n`);
+                    stream.end(`export PS1='$ '\necho ${startCmdFlag}\n${command}\necho ${endCmdFlag}\n` +
+                    `exit\nexit\nexit\nexit\nexit\nexit\nexit\nexit\n`);
                 });
             });
             conn.connect({
@@ -99,10 +102,11 @@ export class Shell {
                 username: session.ISshSession.user,
                 password: session.ISshSession.password,
                 privateKey: (session.ISshSession.privateKey != null && session.ISshSession.privateKey !== "undefined") ?
-                require("fs").readFileSync(session.ISshSession.privateKey) : "",
+                    require("fs").readFileSync(session.ISshSession.privateKey) : "",
                 passphrase: session.ISshSession.keyPassphrase,
                 authHandler: Shell.authenticationHandler,
-                readyTimeout: 2000
+                readyTimeout: (session.ISshSession.handshakeTimeout != null && session.ISshSession.handshakeTimeout !== undefined) ?
+                    session.ISshSession.handshakeTimeout : 0
             });
             conn.on("error", (err: Error) => {
                 if (err.message.includes(ZosUssMessages.allAuthMethodsFailed.message)) {
